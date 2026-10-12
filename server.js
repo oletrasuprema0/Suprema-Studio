@@ -1,5 +1,6 @@
 
 const express = require("express");
+const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
@@ -19,15 +20,15 @@ if (
   );
 }
 
-// Rota principal
+// Interface do Suprema Studio
+app.use(express.static(path.join(__dirname, "public")));
+
+// Página inicial
 app.get("/", (req, res) => {
-  res.status(200).json({
-    status: "online",
-    message: "Servidor funcionando!"
-  });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Verifica se as variáveis do Supabase estão configuradas
+// Verifica a configuração do Supabase
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "online",
@@ -35,7 +36,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Testa uma consulta real ao banco de dados
+// Verifica a conexão real com o banco
 app.get("/health/db", async (req, res) => {
   if (!supabase) {
     return res.status(503).json({
@@ -67,10 +68,7 @@ app.get("/health/db", async (req, res) => {
       databaseConnected: true
     });
   } catch (error) {
-    console.error(
-      "Erro ao testar o Supabase:",
-      error.message
-    );
+    console.error("Erro ao testar o Supabase.");
 
     return res.status(503).json({
       status: "error",
@@ -79,7 +77,7 @@ app.get("/health/db", async (req, res) => {
   }
 });
 
-// Inicialização do servidor
+// Inicialização
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor iniciado na porta ${PORT}`);
 });
