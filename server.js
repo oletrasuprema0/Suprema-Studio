@@ -19,6 +19,7 @@ if (
   );
 }
 
+// Rota principal
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "online",
@@ -26,6 +27,7 @@ app.get("/", (req, res) => {
   });
 });
 
+// Verifica se as variáveis do Supabase estão configuradas
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "online",
@@ -33,6 +35,51 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Testa uma consulta real ao banco de dados
+app.get("/health/db", async (req, res) => {
+  if (!supabase) {
+    return res.status(503).json({
+      status: "error",
+      databaseConnected: false
+    });
+  }
+
+  try {
+    const { error } = await supabase
+      .from("games")
+      .select("id")
+      .limit(1);
+
+    if (error) {
+      console.error(
+        "Falha no teste do Supabase:",
+        error.message
+      );
+
+      return res.status(503).json({
+        status: "error",
+        databaseConnected: false
+      });
+    }
+
+    return res.status(200).json({
+      status: "online",
+      databaseConnected: true
+    });
+  } catch (error) {
+    console.error(
+      "Erro ao testar o Supabase:",
+      error.message
+    );
+
+    return res.status(503).json({
+      status: "error",
+      databaseConnected: false
+    });
+  }
+});
+
+// Inicialização do servidor
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor iniciado na porta ${PORT}`);
 });
