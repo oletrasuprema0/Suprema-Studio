@@ -85,9 +85,9 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
       </section>
       <section class="section-view" id="platforms-view" hidden>
         <div class="section-heading"><h2>Seus Studios</h2><span>Painéis separados</span></div>
-        <p class="section-intro">Cada plataforma terá seu próprio ambiente, inspirado nas ferramentas oficiais. Estes cartões ainda não conectam contas nem exibem dados externos.</p>
+        <p class="section-intro">Acesse o painel individual de cada plataforma. O status de conexão aparece quando a integração correspondente está configurada.</p>
         <div class="platform-grid">
-          <article class="platform-card"><span class="tag">Studio individual</span><h3>YouTube Studio</h3><p>Área de trabalho para organizar vídeos, Shorts, lives, calendário e publicações do canal.</p><button class="primary-btn" data-platform="YouTube">Abrir YouTube Studio →</button></article>
+          <article class="platform-card" id="youtube-platform-card"><span class="tag">Studio individual</span><h3>YouTube Studio <span id="youtube-connection-label" style="float:right;color:var(--muted);font-size:12px;font-weight:400">Verificando conexão…</span></h3><p id="youtube-card-description">Área de trabalho para organizar vídeos, Shorts, lives, calendário e publicações do canal.</p><button class="primary-btn" data-platform="YouTube" id="youtube-open-button">Abrir YouTube Studio →</button></article>
           <article class="platform-card"><span class="tag">Studio individual</span><h3>TikTok Studio</h3><p>Planeje vídeos curtos, ideias, frequência de postagem e acompanhe o que já foi publicado.</p><button class="primary-btn" data-platform="TikTok">Abrir TikTok Studio →</button></article>
           <article class="platform-card"><span class="tag">Studio individual</span><h3>Instagram Studio</h3><p>Organize Reels, posts, temas recorrentes, calendário editorial e rascunhos.</p><button class="primary-btn" data-platform="Instagram">Abrir Instagram Studio →</button></article>
           <article class="platform-card"><span class="tag">Studio individual</span><h3>Twitch / Lives</h3><p>Prepare lives, pautas, títulos, horários e conteúdos derivados das transmissões.</p><button class="primary-btn" data-platform="Twitch">Abrir Twitch Studio →</button></article>
@@ -108,11 +108,11 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
 (() => {
   const $ = id => document.getElementById(id);
   const authScreen=$("auth-screen"), appScreen=$("app-screen"), form=$("auth-form"), emailInput=$("auth-email"), passwordInput=$("auth-password"), submit=$("auth-submit"), message=$("auth-message");
-  let mode="login",busy=false,currentUser=null;
+  let mode="login",busy=false,currentUser=null,youtubeStatus={connected:false,channelName:"",needsReconnect:false};
   function showMessage(text,type){message.textContent=text;message.className="message "+type;message.hidden=false}
   function clearMessage(){message.textContent="";message.hidden=true;message.className="message"}
   function setMode(nextMode){mode=nextMode;const signup=mode==="signup";$("auth-title").textContent=signup?"Crie sua conta.":"Entre no seu estúdio.";$("auth-intro").textContent=signup?"Cadastre seu e-mail e crie uma senha para acessar seu espaço criativo.":"Acesse sua conta para continuar organizando suas ideias e projetos.";$("auth-submit").textContent=signup?"Criar conta":"Entrar";$("auth-switch-label").textContent=signup?"Já tem uma conta?":"Ainda não tem uma conta?";$("auth-switch").textContent=signup?"Fazer login":"Criar conta";passwordInput.autocomplete=signup?"new-password":"current-password";clearMessage()}
-  function showApp(user){currentUser=user;authScreen.hidden=true;appScreen.hidden=false;$("account-email").textContent=user.email||"Conta conectada";$("settings-email").textContent=user.email||"Conta autenticada pelo Supabase.";updateCounts();openSection("Início")}
+  function showApp(user){currentUser=user;authScreen.hidden=true;appScreen.hidden=false;$("account-email").textContent=user.email||"Conta conectada";$("settings-email").textContent=user.email||"Conta autenticada pelo Supabase.";updateCounts();openSection("Início");checkYouTubeStatus()}
   function showLogin(){currentUser=null;appScreen.hidden=true;authScreen.hidden=false;passwordInput.value="";setMode("login")}
   $("auth-switch").addEventListener("click",()=>setMode(mode==="login"?"signup":"login"));
   form.addEventListener("submit",async event=>{event.preventDefault();if(busy)return;if(!window.SUPREMA_AUTH){showMessage("A autenticação não foi carregada. Confira config.js, auth.js e a conexão com o Supabase.","error");return}const email=emailInput.value.trim(),password=passwordInput.value;if(!email||!password){showMessage("Preencha o e-mail e a senha.","error");return}busy=true;submit.disabled=true;submit.textContent=mode==="signup"?"Criando conta...":"Entrando...";clearMessage();try{if(mode==="signup"){const result=await window.SUPREMA_AUTH.signUp(email,password);if(result.error)throw result.error;if(result.data.session)showApp(result.data.user);else{showMessage("Cadastro iniciado! Confirme seu e-mail pelo link enviado. Depois, volte aqui para entrar.","success");setMode("login");showMessage("Cadastro iniciado! Confirme seu e-mail pelo link enviado. Depois, volte aqui para entrar.","success")}}else{const result=await window.SUPREMA_AUTH.signIn(email,password);if(result.error)throw result.error;showApp(result.data.user)}}catch(error){const raw=String(error&&error.message||"");let friendly="Não foi possível concluir. Confira os dados e tente novamente.";if(/invalid login credentials/i.test(raw))friendly="E-mail ou senha incorretos.";else if(/email not confirmed/i.test(raw))friendly="Confirme seu e-mail pelo link enviado antes de entrar.";else if(/user already registered/i.test(raw))friendly="Este e-mail já possui cadastro. Tente fazer login.";else if(/password should be at least/i.test(raw))friendly="A senha precisa ter pelo menos 6 caracteres.";else if(/rate limit/i.test(raw))friendly="Muitas tentativas em pouco tempo. Aguarde e tente novamente.";else if(/fetch|network/i.test(raw))friendly="Falha de conexão. Verifique a internet e tente novamente.";showMessage(friendly,"error")}finally{busy=false;submit.disabled=false;submit.textContent=mode==="signup"?"Criar conta":"Entrar"}});
@@ -163,85 +163,44 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
     }
     $('content-panel').innerHTML='<div class="section-heading"><h2>'+cfg.title+'</h2><span>'+items.length+' registro(s)</span></div><p class="section-intro">'+cfg.desc+'</p>'+(tab==='projetos'||tab==='ideias'?formMarkup(cfg.kind,cfg.fields,'Salvar'):'')+(tab==='projetos'||tab==='ideias'?itemCards(items,cfg.kind):listMarkup(items));if(tab==='projetos'||tab==='ideias'){bindImagePreview();const f=$('record-form');f.onsubmit=async event=>{event.preventDefault();const fd=new FormData(f);try{const image=await fileToDataUrl(fd.get('imageFile'));const item={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),kind:cfg.kind,title:String(fd.get('title')||'').trim(),body:String(fd.get('body')||'').trim(),platform:String(fd.get('platform')||''),status:String(fd.get('status')||''),date:String(fd.get('date')||''),image};if(!item.title){alert('Preencha o título.');return}data[cfg.kind].push(item);if(saveData())renderContentTab(tab)}catch(err){alert(err.message)}};document.querySelectorAll('[data-open-record]').forEach(card=>{const act=e=>{if(e.target.closest('button'))return;openRecord(card.dataset.recordKind,card.dataset.openRecord,tab)};card.onclick=act;card.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();act(e)}}});document.querySelectorAll('[data-edit-record]').forEach(b=>b.onclick=()=>openRecord(b.dataset.kind,b.dataset.editRecord,tab));document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{if(!confirm('Excluir este registro deste navegador?'))return;data[b.dataset.kind]=data[b.dataset.kind].filter(x=>String(x.id)!==b.dataset.delete);data.calendario.forEach(e=>{if(e.linkedKind===b.dataset.kind&&String(e.linkedId)===b.dataset.delete){delete e.linkedKind;delete e.linkedId}});saveData();renderContentTab(tab)})}else{document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{if(!confirm('Excluir este registro deste navegador?'))return;data[cfg.kind]=data[cfg.kind].filter(x=>String(x.id)!==b.dataset.delete);saveData();renderContentTab(tab)})}}
   document.querySelectorAll("[data-content-tab]").forEach(button=>button.addEventListener("click",()=>renderContentTab(button.dataset.contentTab)));
-  async function startYouTubeOAuth(button){
-    if(!window.SUPREMA_AUTH){
-      throw new Error("Autenticação não carregada. Atualize a página.");
-    }
-    const {data:sessionData,error:sessionError}=await window.SUPREMA_AUTH.getSession();
-    const session=sessionData?.session;
-    if(sessionError||!session?.access_token){
-      throw new Error("Sua sessão expirou. Entre novamente.");
-    }
-    const originalText=button.textContent;
-    button.disabled=true;
-    button.textContent="Conectando ao YouTube...";
+  async function checkYouTubeStatus(){
+    const label=$("youtube-connection-label"),button=$("youtube-open-button"),description=$("youtube-card-description");
+    if(!label||!button)return;
+    label.textContent="Verificando…";
     try{
-      const response=await fetch("/auth/youtube/start",{
-        method:"POST",
-        headers:{Authorization:`Bearer ${session.access_token}`,"Content-Type":"application/json"}
-      });
-      let result;
-      try{result=await response.json()}catch(_){throw new Error("O servidor retornou uma resposta inválida.")}
-      if(!response.ok||!result.url)throw new Error(result.error||"Não foi possível iniciar a conexão.");
-      const destination=new URL(result.url);
-      if(destination.protocol!=="https:"||destination.hostname!=="accounts.google.com"){
-        throw new Error("Endereço de autorização inválido.");
-      }
-      window.location.assign(destination.href);
-    }catch(error){button.disabled=false;button.textContent=originalText;throw error}
-  }
-
-  async function checkYouTubeStatus(session){
-    try{
-      const response=await fetch("/api/youtube/status",{
-        headers:{Authorization:`Bearer ${session.access_token}`},cache:"no-store"
-      });
-      if(!response.ok)return;
+      const auth=await window.SUPREMA_AUTH.getSession();
+      const token=auth?.data?.session?.access_token;
+      if(!token)throw new Error("Sessão indisponível");
+      const response=await fetch("/api/youtube/status",{headers:{Authorization:`Bearer ${token}`}});
       const result=await response.json();
-      const button=document.querySelector('[data-platform="YouTube"]');
-      if(!button)return;
-      if(result.connected){
-        button.textContent="YouTube conectado ✓";
-        button.dataset.connectionStatus="connected";
-        button.title="Canal: "+(result.channelName||"YouTube");
-      }else if(result.needsReconnect){
-        button.textContent="Reconectar YouTube";
-        button.dataset.connectionStatus="reconnect";
-        button.title="A autorização do YouTube precisa ser refeita.";
-      }else{
-        button.textContent="Abrir YouTube Studio →";
-        button.dataset.connectionStatus="disconnected";
-      }
-    }catch(_){console.error("Não foi possível atualizar o status do YouTube.")}
+      if(!response.ok)throw new Error(result.error||"Não foi possível verificar a conexão");
+      youtubeStatus={connected:result.connected===true,channelName:result.channelName||"",needsReconnect:result.needsReconnect===true};
+      if(youtubeStatus.connected){label.textContent="Conectado";description.textContent="Canal: "+(youtubeStatus.channelName||"YouTube conectado")+". Abra seu painel para organizar vídeos, Shorts, lives e calendário.";button.textContent="Abrir YouTube Studio →"}
+      else if(youtubeStatus.needsReconnect){label.textContent="Reconectar";description.textContent="A conta do YouTube precisa ser reconectada para voltar a usar a integração.";button.textContent="Reconectar YouTube →"}
+      else{label.textContent="Não conectado";description.textContent="Conecte seu canal para habilitar a integração e abrir o painel individual.";button.textContent="Conectar YouTube →"}
+    }catch(_){label.textContent="Status indisponível";description.textContent="Abra o painel para tentar verificar a conexão com o YouTube.";button.textContent="Abrir YouTube Studio →"}
   }
-
   document.querySelectorAll("[data-platform]").forEach(button=>button.addEventListener("click",async event=>{
     const name=button.dataset.platform;
-    if(name==="YouTube"){
-      event.preventDefault();event.stopImmediatePropagation();
+    if(name==="YouTube"&&!youtubeStatus.connected){
+      event.preventDefault();
+      event.stopImmediatePropagation();
       if(button.disabled)return;
       const originalText=button.textContent;
-      button.disabled=true;button.textContent="Verificando YouTube...";
+      button.disabled=true;
+      button.textContent="Conectando ao YouTube...";
       try{
-        if(!window.SUPREMA_AUTH)throw new Error("Autenticação não carregada. Atualize a página.");
+        if(!window.SUPREMA_AUTH)throw new Error("A autenticação não foi carregada. Atualize a página.");
         const {data:sessionData,error:sessionError}=await window.SUPREMA_AUTH.getSession();
-        const session=sessionData?.session;
-        if(sessionError||!session?.access_token)throw new Error("Sua sessão expirou. Entre novamente.");
-        const response=await fetch("/api/youtube/status",{method:"GET",headers:{Authorization:`Bearer ${session.access_token}`},cache:"no-store"});
+        if(sessionError||!sessionData?.session?.access_token)throw new Error("Sua sessão expirou. Entre novamente no Suprema Studio.");
+        const response=await fetch("/auth/youtube/start",{method:"POST",headers:{Authorization:`Bearer ${sessionData.session.access_token}`,"Content-Type":"application/json"}});
         let result;
-        try{result=await response.json()}catch(_){throw new Error("Resposta inválida do servidor.")}
-        if(response.status===401)throw new Error("Sua sessão expirou. Entre novamente.");
-        if(!response.ok)throw new Error(result.error||"Não foi possível verificar o YouTube.");
-        if(result.connected){
-          const detail=$("platform-detail");detail.hidden=false;
-          detail.innerHTML=`<div class="section-heading"><h2>YouTube Studio</h2><span>Conectado</span></div><p class="section-intro">Canal: <strong>${esc(result.channelName||"Canal do YouTube")}</strong></p><p class="section-intro">Sua conta do YouTube está vinculada ao Suprema Studio.</p><button class="primary-btn" type="button" id="youtube-reconnect">Reconectar conta</button>`;
-          $("youtube-reconnect").onclick=async()=>{try{await startYouTubeOAuth(button)}catch(error){alert(error.message||"Não foi possível reconectar o YouTube.")}};
-          detail.scrollIntoView({behavior:"smooth",block:"nearest"});return;
-        }
-        if(result.needsReconnect){if(confirm("A conexão do YouTube precisa ser refeita. Deseja conectar novamente?"))await startYouTubeOAuth(button);return}
-        if(confirm("Nenhum canal conectado foi encontrado. Deseja conectar seu YouTube?"))await startYouTubeOAuth(button);
-      }catch(error){alert(error.message||"Erro ao verificar o YouTube.")}
-      finally{button.disabled=false;if(button.dataset.connectionStatus==="connected")button.textContent="YouTube conectado ✓";else if(button.dataset.connectionStatus==="reconnect")button.textContent="Reconectar YouTube";else button.textContent=originalText}
+        try{result=await response.json()}catch(_){throw new Error("O servidor retornou uma resposta inválida.")}
+        if(!response.ok||!result.url)throw new Error(result.error||"Não foi possível iniciar a conexão com o YouTube.");
+        const destination=new URL(result.url);
+        if(destination.protocol!=="https:"||destination.hostname!=="accounts.google.com")throw new Error("O endereço de autorização retornado não é válido.");
+        window.location.assign(destination.href);
+      }catch(error){alert(error.message||"Erro ao conectar com o YouTube.");button.disabled=false;button.textContent=originalText}
       return;
     }
     const detail=$("platform-detail");
@@ -251,24 +210,17 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
     const scripts=data.roteiros.filter(x=>matchesPlatform(x.platform));
     const platformOptions={YouTube:['Vídeos longos','Shorts','Lives','Títulos e thumbnails'],TikTok:['Vídeos curtos','Ganchos rápidos','Séries de conteúdo','Calendário de postagem'],Instagram:['Reels','Carrosséis e posts','Stories','Calendário editorial'],Twitch:['Planejamento de lives','Pautas e segmentos','Títulos de transmissão','Conteúdos derivados de lives']}[name]||[];
     detail.hidden=false;
-    detail.innerHTML='<div class="section-heading" style="margin-top:0"><div><span class="tag">WORKSPACE DA PLATAFORMA</span><h3 style="margin:4px 0 0;font-size:22px">'+escapeHtml(name)+(name==='Twitch'?' Lives':' Studio')+'</h3></div><button class="small-btn" id="studio-close" type="button">Fechar painel</button></div><p class="section-intro">Um espaço dedicado para organizar o conteúdo de '+escapeHtml(name)+'. Por enquanto, este painel usa os registros locais do Suprema Studio; não está conectado à conta externa e não exibe métricas simuladas.</p><div class="stats" style="margin:18px 0"><article class="stat-card"><div class="stat-label">Atividades no calendário</div><div class="stat-value">'+planned.length+'</div><div class="stat-note">Registros associados a '+escapeHtml(name)+'</div></article><article class="stat-card"><div class="stat-label">Publicações registradas</div><div class="stat-value">'+published.length+'</div><div class="stat-note">Controle manual salvo neste navegador</div></article><article class="stat-card"><div class="stat-label">Roteiros relacionados</div><div class="stat-value">'+scripts.length+'</div><div class="stat-note">Roteiros locais com plataforma compatível</div></article></div><h4>Frentes de trabalho</h4><div class="workspace">'+platformOptions.map((x,i)=>'<article class="feature-card"><div class="feature-icon">'+['✦','▤','◷','↗'][i%4]+'</div><h3>'+escapeHtml(x)+'</h3><p>Organize esta frente usando seus registros e planejamento editorial.</p></article>').join('')+'</div><div class="section-heading"><h3>Próximas atividades</h3><button class="small-btn" id="studio-calendar">Abrir calendário →</button></div>'+(planned.length?'<div class="item-list">'+planned.slice(0,5).map(x=>'<article class="saved-item"><h3>'+escapeHtml(x.title)+'</h3><p>'+escapeHtml(x.date||'Data não definida')+(x.time?' · '+escapeHtml(x.time):'')+' · '+escapeHtml(x.status||'Planejado')+'</p></article>').join('')+'</div>':'<div class="empty-state">Nenhuma atividade de '+escapeHtml(name)+' cadastrada no calendário ainda. Você pode começar criando uma atividade e escolhendo esta plataforma.</div>')+'<div class="item-actions" style="margin-top:18px"><button class="primary-btn" id="studio-new-calendar">Planejar conteúdo</button><button class="secondary-btn" id="studio-scripts">Abrir IA de roteiros</button><button class="secondary-btn" id="studio-publications">Ver publicações</button></div><p class="muted-small" style="margin-top:14px">Próxima etapa de integração: autenticação oficial, permissões e APIs de cada plataforma. Nenhuma conta será conectada sem configuração explícita.</p>';
-    $('studio-close').onclick=()=>{detail.hidden=true};
+    const youtubeCard=$("youtube-platform-card");
+    if(name==="YouTube"&&youtubeCard)youtubeCard.hidden=true;
+    detail.innerHTML='<div class="section-heading" style="margin-top:0"><div><span class="tag">WORKSPACE DA PLATAFORMA</span><h3 style="margin:4px 0 0;font-size:22px">'+escapeHtml(name)+(name==='Twitch'?' Lives':' Studio')+'</h3></div><button class="small-btn" id="studio-close" type="button">Fechar painel</button></div><p class="section-intro">'+(name==='YouTube'&&youtubeStatus.connected?'Conta conectada: '+escapeHtml(youtubeStatus.channelName||'canal do YouTube')+'. Este painel organiza seus registros locais; métricas e ações externas só aparecem quando disponibilizadas pela API.':'Um espaço dedicado para organizar o conteúdo de '+escapeHtml(name)+'. Este painel usa registros locais do Suprema Studio e não exibe métricas simuladas.')+'</p><div class="stats" style="margin:18px 0"><article class="stat-card"><div class="stat-label">Atividades no calendário</div><div class="stat-value">'+planned.length+'</div><div class="stat-note">Registros associados a '+escapeHtml(name)+'</div></article><article class="stat-card"><div class="stat-label">Publicações registradas</div><div class="stat-value">'+published.length+'</div><div class="stat-note">Controle manual salvo neste navegador</div></article><article class="stat-card"><div class="stat-label">Roteiros relacionados</div><div class="stat-value">'+scripts.length+'</div><div class="stat-note">Roteiros locais com plataforma compatível</div></article></div><h4>Frentes de trabalho</h4><div class="workspace">'+platformOptions.map((x,i)=>'<article class="feature-card"><div class="feature-icon">'+['✦','▤','◷','↗'][i%4]+'</div><h3>'+escapeHtml(x)+'</h3><p>Organize esta frente usando seus registros e planejamento editorial.</p></article>').join('')+'</div><div class="section-heading"><h3>Próximas atividades</h3><button class="small-btn" id="studio-calendar">Abrir calendário →</button></div>'+(planned.length?'<div class="item-list">'+planned.slice(0,5).map(x=>'<article class="saved-item"><h3>'+escapeHtml(x.title)+'</h3><p>'+escapeHtml(x.date||'Data não definida')+(x.time?' · '+escapeHtml(x.time):'')+' · '+escapeHtml(x.status||'Planejado')+'</p></article>').join('')+'</div>':'<div class="empty-state">Nenhuma atividade de '+escapeHtml(name)+' cadastrada no calendário ainda. Você pode começar criando uma atividade e escolhendo esta plataforma.</div>')+'<div class="item-actions" style="margin-top:18px"><button class="primary-btn" id="studio-new-calendar">Planejar conteúdo</button><button class="secondary-btn" id="studio-scripts">Abrir IA de roteiros</button><button class="secondary-btn" id="studio-publications">Ver publicações</button></div><p class="muted-small" style="margin-top:14px">Próxima etapa de integração: autenticação oficial, permissões e APIs de cada plataforma. Nenhuma conta será conectada sem configuração explícita.</p>';
+    $('studio-close').onclick=()=>{detail.hidden=true;if(youtubeCard)youtubeCard.hidden=false};
     $('studio-calendar').onclick=$('studio-new-calendar').onclick=()=>openSection('Conteúdo')||renderContentTab('calendario');
     $('studio-scripts').onclick=()=>{openSection('Conteúdo');renderContentTab('roteiros')};
     $('studio-publications').onclick=()=>{openSection('Conteúdo');renderContentTab('publicacoes')};
   }));
   $("chat-form").addEventListener("submit",event=>{event.preventDefault();const input=$("chat-input"),text=input.value.trim();if(!text)return;const bubble=document.createElement("div");bubble.className="chat-bubble user";bubble.textContent=text;$("chat-messages").appendChild(bubble);const response=document.createElement("div");response.className="chat-bubble assistant";response.textContent="Recebi seu pedido. A interface da Suprema Intelligence já está preparada, mas ainda não há um modelo de IA nem fontes de pesquisa conectados. Quando integrarmos esses serviços, esta conversa poderá consultar seus projetos, calendário e publicações autorizadas. Por enquanto, não consigo fornecer métricas, tendências ou recomendações baseadas em dados externos."; $("chat-messages").appendChild(response);input.value="";$("chat-messages").scrollTop=$("chat-messages").scrollHeight});
   $("export-data").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="suprema-studio-dados-locais.json";a.click();URL.revokeObjectURL(url)});
-  async function initialize(){
-    if(!window.SUPREMA_AUTH){showMessage("Não foi possível carregar a autenticação. Verifique config.js e auth.js.","error");return}
-    try{
-      const result=await window.SUPREMA_AUTH.getSession();if(result.error)throw result.error;
-      if(result.data.session){showApp(result.data.session.user);checkYouTubeStatus(result.data.session)}else showLogin();
-      window.SUPREMA_AUTH.onAuthStateChange((event,session)=>{
-        if(session){showApp(session.user);if(event==="SIGNED_IN"||event==="TOKEN_REFRESHED")checkYouTubeStatus(session)}else showLogin();
-      });
-    }catch(_){showMessage("Falha ao verificar sua sessão. Atualize a página e tente novamente.","error")}
-  }
+  async function initialize(){if(!window.SUPREMA_AUTH){showMessage("Não foi possível carregar a autenticação. Verifique config.js e auth.js.","error");return}try{const result=await window.SUPREMA_AUTH.getSession();if(result.error)throw result.error;if(result.data.session)showApp(result.data.session.user);else showLogin();window.SUPREMA_AUTH.onAuthStateChange((event,session)=>{if(session)showApp(session.user);else showLogin()})}catch(_){showMessage("Falha ao verificar sua sessão. Atualize a página e tente novamente.","error")}}
   updateCounts();initialize();
 })();
 </script>
