@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -8,369 +7,134 @@
 <meta name="description" content="Suprema Studio — central de criação e gestão de conteúdo gamer.">
 <title>Suprema Studio</title>
 <style>
-:root{color-scheme:dark;--bg:#101010;--panel:#181818;--light:#202020;--border:#303030;--text:#f5f5f5;--muted:#999;--red:#e63946}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}
-button,input{font:inherit}button{cursor:pointer}
-button:focus-visible,input:focus-visible{outline:2px solid #ff777e;outline-offset:3px}
-[hidden]{display:none!important}
-.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px}
-.auth-card{width:100%;max-width:420px;padding:30px;background:var(--panel);border:1px solid var(--border);border-radius:18px}
-.brand{display:flex;align-items:center;gap:11px;margin-bottom:28px}
-.brand-icon{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:12px;background:var(--red);font-size:20px;font-weight:900}
-.brand-name{font-weight:850;letter-spacing:-.5px}
-.brand-sub{margin-top:3px;color:var(--muted);font-size:11px}
-.eyebrow{color:var(--red);font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
-.auth-card h1{margin:10px 0;font-size:28px;letter-spacing:-1px}
-.auth-intro{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 23px}
-.field{display:block;margin:16px 0}
-.field span{display:block;margin-bottom:8px;font-size:12px;font-weight:700}
-.field input{width:100%;padding:13px;background:#101010;border:1px solid var(--border);border-radius:9px;color:white}
-.field input:focus{border-color:var(--red);outline:none}
-.primary-btn{width:100%;padding:13px 15px;color:white;background:var(--red);border:0;border-radius:9px;font-size:13px;font-weight:800}
-.primary-btn:disabled{opacity:.6;cursor:wait}
-.auth-switch{margin:20px 0 0;text-align:center;color:var(--muted);font-size:12px;line-height:1.8}
-.text-btn{padding:0;color:#ff777e;background:none;border:0;font-weight:750}
-.message{margin:14px 0 0;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
-.message.error{color:#ffb7bb;border-color:#71363b;background:#271719}
-.message.success{color:#b8e9c5;border-color:#2d4834;background:#18251b}
-.auth-foot{margin-top:23px;color:#777;font-size:10px;line-height:1.6;text-align:center}
-.app{min-height:100vh;display:grid;grid-template-columns:245px minmax(0,1fr)}
-.sidebar{padding:25px 17px;border-right:1px solid var(--border);background:#141414}
-.sidebar .brand{padding:0 8px 28px}
-.nav-label{margin:19px 9px 9px;color:#777;font-size:10px;font-weight:800;letter-spacing:1.5px}
-.nav-item{display:flex;align-items:center;gap:11px;width:100%;padding:12px;margin:3px 0;color:#aaa;background:transparent;border:1px solid transparent;border-radius:9px;text-align:left;font-size:13px}
-.nav-item.active{color:white;background:#292020;border-color:#49272b}
-.nav-icon{width:20px;text-align:center;font-size:16px}
-.sidebar-bottom{margin-top:35px;padding:15px 12px;background:var(--panel);border:1px solid var(--border);border-radius:12px}
-.sidebar-bottom p{margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
-main{min-width:0;padding:30px clamp(18px,4vw,48px)}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;padding-bottom:25px;border-bottom:1px solid var(--border)}
-h1{margin:8px 0 0;font-size:clamp(25px,4vw,35px);letter-spacing:-1.3px}
-.top-description{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.6}
-.status{display:flex;align-items:center;gap:8px;padding:9px 12px;color:#b8e9c5;background:#18251b;border:1px solid #2d4834;border-radius:20px;font-size:11px}
-.status-dot{width:7px;height:7px;background:#65d483;border-radius:50%}
-.account-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);border-radius:10px;font-size:12px}
-.account-email{min-width:0;overflow-wrap:anywhere;color:#ccc}
-.small-btn{padding:8px 11px;color:white;background:#292020;border:1px solid #49272b;border-radius:7px;font-size:11px}
-.welcome{margin-top:27px;padding:25px;border:1px solid #392326;border-radius:15px;background:radial-gradient(ellipse at 90% 10%,#452124 0%,transparent 45%),linear-gradient(120deg,#211719,#181818 70%)}
-.welcome h2{margin:0;font-size:22px;letter-spacing:-.5px}
-.welcome p{max-width:510px;margin:10px 0 20px;color:#b7b0b0;font-size:13px;line-height:1.7}
-.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:30px 0 15px}
-.section-heading h2{margin:0;font-size:16px}
-.section-heading span{color:var(--muted);font-size:11px}
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
-.stat-card,.feature-card{padding:17px;background:var(--panel);border:1px solid var(--border);border-radius:12px}
-.stat-label{color:var(--muted);font-size:12px}
-.stat-value{margin-top:14px;font-size:24px;font-weight:800}
-.stat-note{margin-top:7px;color:#777;font-size:10px;line-height:1.5}
-.workspace{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-.feature-card{padding:19px}
-.feature-icon{display:grid;place-items:center;width:37px;height:37px;background:var(--light);border:1px solid #343434;border-radius:10px;font-size:18px}
-.feature-card h3{margin:15px 0 7px;font-size:14px}
-.feature-card p{min-height:37px;margin:0 0 15px;color:var(--muted);font-size:12px;line-height:1.6}
-.notice{margin-top:25px;padding:14px 16px;color:#aaa;background:#151515;border:1px solid var(--border);border-radius:10px;font-size:11px;line-height:1.7}
-.notice strong{color:#ddd}
-.mobile-brand{display:none}
-@media(max-width:760px){
-.auth-card{padding:24px 20px}
-.app{display:block}.sidebar{display:none}
-main{padding:20px 16px 35px}
-.mobile-brand{display:flex;align-items:center;gap:10px;margin-bottom:25px}
-.mobile-brand .brand{margin:0}
-.topbar{align-items:flex-start}
-.status{padding:8px;font-size:0}.status-dot{width:8px;height:8px}
-.welcome{padding:21px 18px}
-.stats,.workspace{grid-template-columns:1fr}
-.stat-card{padding:15px}.stat-value{margin-top:9px}
-.feature-card p{min-height:auto}
-}
+:root{color-scheme:dark;--bg:#101010;--panel:#181818;--light:#202020;--border:#303030;--text:#f5f5f5;--muted:#999;--red:#e63946;--red-soft:#2b191b}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #ff777e;outline-offset:3px}[hidden]{display:none!important}
+.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px}.auth-card{width:100%;max-width:420px;padding:30px;background:var(--panel);border:1px solid var(--border);border-radius:18px}.brand{display:flex;align-items:center;gap:11px;margin-bottom:28px}.brand-icon{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:12px;background:var(--red);font-size:20px;font-weight:900}.brand-name{font-weight:850;letter-spacing:-.5px}.brand-sub{margin-top:3px;color:var(--muted);font-size:11px}.eyebrow{color:#ff6872;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase}.auth-card h1{margin:10px 0;font-size:28px;letter-spacing:-1px}.auth-intro{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 23px}.field{display:block;margin:16px 0}.field span{display:block;margin-bottom:8px;font-size:12px;font-weight:700}.field input{width:100%;padding:13px;background:#101010;border:1px solid var(--border);border-radius:9px;color:white}.field input:focus{border-color:var(--red);outline:none}.primary-btn{padding:12px 15px;color:white;background:var(--red);border:0;border-radius:9px;font-size:13px;font-weight:800}.primary-btn:disabled{opacity:.6;cursor:wait}.auth-card .primary-btn{width:100%}.auth-switch{margin:20px 0 0;text-align:center;color:var(--muted);font-size:12px;line-height:1.8}.text-btn{padding:0;color:#ff777e;background:none;border:0;font-weight:750}.message{margin:14px 0 0;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.message.error{color:#ffb7bb;border-color:#71363b;background:#271719}.message.success{color:#b8e9c5;border-color:#2d4834;background:#18251b}.auth-foot{margin-top:23px;color:#777;font-size:10px;line-height:1.6;text-align:center}
+.app{min-height:100vh;display:grid;grid-template-columns:238px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;padding:23px 15px;border-right:1px solid var(--border);background:#141414}.sidebar .brand{padding:0 8px 25px;margin-bottom:15px}.nav-label{margin:19px 9px 9px;color:#777;font-size:10px;font-weight:800;letter-spacing:1.5px}.nav-item{display:flex;align-items:center;gap:11px;width:100%;padding:11px 12px;margin:3px 0;color:#aaa;background:transparent;border:1px solid transparent;border-radius:9px;text-align:left;font-size:13px}.nav-item:hover{color:white;background:#1d1d1d}.nav-item.active{color:white;background:#292020;border-color:#49272b}.nav-icon{width:20px;text-align:center;font-size:16px}.sidebar-bottom{margin-top:27px;padding:14px 12px;background:var(--panel);border:1px solid var(--border);border-radius:12px}.sidebar-bottom p{margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
+main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:none}.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;padding-bottom:22px;border-bottom:1px solid var(--border)}h1{margin:8px 0 0;font-size:clamp(25px,4vw,35px);letter-spacing:-1.3px}.top-description{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.6}.status{display:flex;align-items:center;gap:8px;padding:9px 12px;color:#b8e9c5;background:#18251b;border:1px solid #2d4834;border-radius:20px;font-size:11px;white-space:nowrap}.status-dot{width:7px;height:7px;background:#65d483;border-radius:50%}.account-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:15px;padding:11px 13px;background:var(--panel);border:1px solid var(--border);border-radius:10px;font-size:12px}.account-email{min-width:0;overflow-wrap:anywhere;color:#ccc}.small-btn{padding:8px 11px;color:white;background:#292020;border:1px solid #49272b;border-radius:7px;font-size:11px}
+.welcome{margin-top:25px;padding:25px;border:1px solid #392326;border-radius:15px;background:radial-gradient(ellipse at 90% 10%,#452124 0%,transparent 45%),linear-gradient(120deg,#211719,#181818 70%)}.welcome h2{margin:0;font-size:22px;letter-spacing:-.5px}.welcome p{max-width:600px;margin:10px 0 19px;color:#b7b0b0;font-size:13px;line-height:1.7}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:27px 0 14px}.section-heading h2{margin:0;font-size:16px}.section-heading span{color:var(--muted);font-size:11px}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.stat-card,.feature-card,.panel-card{padding:17px;background:var(--panel);border:1px solid var(--border);border-radius:12px}.stat-label{color:var(--muted);font-size:12px}.stat-value{margin-top:13px;font-size:24px;font-weight:800}.stat-note{margin-top:7px;color:#777;font-size:10px;line-height:1.5}.workspace{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.feature-card{padding:18px}.feature-icon{display:grid;place-items:center;width:37px;height:37px;background:var(--light);border:1px solid #343434;border-radius:10px;font-size:18px}.feature-card h3{margin:13px 0 7px;font-size:14px}.feature-card p{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.6}.notice{margin-top:23px;padding:13px 15px;color:#aaa;background:#151515;border:1px solid var(--border);border-radius:10px;font-size:11px;line-height:1.7}.notice strong{color:#ddd}
+.section-view{margin-top:25px}.section-intro{max-width:760px;color:var(--muted);font-size:13px;line-height:1.7}.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}.control{width:100%;padding:12px;color:var(--text);background:#111;border:1px solid var(--border);border-radius:9px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid .field{margin:5px 0}.field textarea{width:100%;min-height:110px;padding:12px;color:white;background:#111;border:1px solid var(--border);border-radius:9px;resize:vertical}.field select{width:100%;padding:12px;color:white;background:#111;border:1px solid var(--border);border-radius:9px}.item-list{display:grid;gap:10px;margin-top:15px}.saved-item{padding:14px;background:#151515;border:1px solid var(--border);border-radius:10px}.saved-item h3{margin:0 0 7px;font-size:14px}.saved-item p{margin:0;color:var(--muted);font-size:12px;line-height:1.6;white-space:pre-wrap}.item-meta{margin-top:9px;color:#777;font-size:10px}.empty-state{padding:24px;text-align:center;color:var(--muted);background:#151515;border:1px dashed #383838;border-radius:12px;font-size:12px;line-height:1.7}.platform-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.platform-card{padding:19px;background:linear-gradient(140deg,#1c1c1c,#151515);border:1px solid var(--border);border-radius:13px}.platform-card h3{margin:0 0 8px;font-size:16px}.platform-card p{min-height:40px;margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.6}.tag{display:inline-flex;padding:5px 8px;border:1px solid #484848;border-radius:20px;color:#bbb;font-size:10px;margin-bottom:12px}.chat-shell{display:flex;flex-direction:column;min-height:410px;max-height:650px;margin-top:17px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#141414}.chat-messages{display:flex;flex-direction:column;gap:13px;overflow:auto;flex:1;padding:18px}.chat-bubble{max-width:88%;padding:13px 14px;border-radius:12px;font-size:13px;line-height:1.7;white-space:pre-wrap}.chat-bubble.assistant{align-self:flex-start;background:#202020;border:1px solid #303030;color:#ddd}.chat-bubble.user{align-self:flex-end;background:#392023;border:1px solid #593036;color:white}.chat-compose{display:flex;gap:9px;padding:12px;border-top:1px solid var(--border)}.chat-compose textarea{flex:1;min-width:0;min-height:44px;max-height:120px;padding:12px;background:#101010;border:1px solid var(--border);border-radius:9px;color:white;resize:vertical}.chat-compose button{align-self:stretch}.muted-small{color:#777;font-size:10px;line-height:1.6}.divider{height:1px;background:var(--border);margin:18px 0}
+@media(max-width:760px){.auth-card{padding:24px 20px}.app{display:block}.sidebar{position:sticky;top:0;z-index:10;display:flex;height:auto;gap:6px;overflow-x:auto;padding:9px;background:#141414;border-right:0;border-bottom:1px solid var(--border);scrollbar-width:thin}.sidebar .brand,.nav-label,.sidebar-bottom{display:none}.nav-item{flex:0 0 auto;width:auto;margin:0;padding:10px 12px;white-space:nowrap;font-size:12px}.nav-icon{width:auto}main{padding:18px 14px 35px}.mobile-brand{display:flex;align-items:center;gap:10px;margin-bottom:21px}.mobile-brand .brand{margin:0}.topbar{align-items:flex-start}.status{padding:8px;font-size:0}.status-dot{width:8px;height:8px}.welcome{padding:21px 18px}.stats,.workspace,.platform-grid,.form-grid{grid-template-columns:1fr}.stat-card{padding:14px}.stat-value{margin-top:8px}.chat-bubble{max-width:96%}.chat-shell{min-height:440px}.account-bar{align-items:flex-start}.account-email{padding-top:5px}}
 </style>
 </head>
 <body>
-
 <section class="auth-screen" id="auth-screen">
   <div class="auth-card">
-    <div class="brand">
-      <div class="brand-icon">S</div>
-      <div>
-        <div class="brand-name">SUPREMA STUDIO</div>
-        <div class="brand-sub">Central do criador</div>
-      </div>
-    </div>
-    <div class="eyebrow">SEU ESPAÇO CRIATIVO</div>
-    <h1 id="auth-title">Entre no seu estúdio.</h1>
+    <div class="brand"><div class="brand-icon">S</div><div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div></div>
+    <div class="eyebrow">SEU ESPAÇO CRIATIVO</div><h1 id="auth-title">Entre no seu estúdio.</h1>
     <p class="auth-intro" id="auth-intro">Acesse sua conta para continuar organizando suas ideias e projetos.</p>
-
     <form id="auth-form">
-      <label class="field">
-        <span>E-mail</span>
-        <input id="auth-email" type="email" autocomplete="email" placeholder="voce@exemplo.com" maxlength="254" required>
-      </label>
-      <label class="field">
-        <span>Senha</span>
-        <input id="auth-password" type="password" autocomplete="current-password" placeholder="Sua senha" minlength="6" maxlength="128" required>
-      </label>
+      <label class="field"><span>E-mail</span><input id="auth-email" type="email" autocomplete="email" placeholder="voce@exemplo.com" maxlength="254" required></label>
+      <label class="field"><span>Senha</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="Sua senha" minlength="6" maxlength="128" required></label>
       <button class="primary-btn" id="auth-submit" type="submit">Entrar</button>
     </form>
-
     <div id="auth-message" class="message" role="status" aria-live="polite" hidden></div>
-    <p class="auth-switch">
-      <span id="auth-switch-label">Ainda não tem uma conta?</span>
-      <button type="button" class="text-btn" id="auth-switch">Criar conta</button>
-    </p>
+    <p class="auth-switch"><span id="auth-switch-label">Ainda não tem uma conta?</span> <button type="button" class="text-btn" id="auth-switch">Criar conta</button></p>
     <div class="auth-foot">Sua conta é gerenciada pelo Supabase. Nunca compartilhe sua senha.</div>
   </div>
 </section>
-
 <div class="app" id="app-screen" hidden>
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-icon">S</div>
-      <div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div>
-    </div>
-    <div class="nav-label">ESPAÇO DE TRABALHO</div>
+  <aside class="sidebar" aria-label="Navegação principal">
+    <div class="brand"><div class="brand-icon">S</div><div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div></div>
+    <div class="nav-label">ESTÚDIO</div>
     <button class="nav-item active" data-section="Início"><span class="nav-icon">⌂</span> Início</button>
-    <button class="nav-item" data-section="Projetos"><span class="nav-icon">▧</span> Projetos</button>
-    <button class="nav-item" data-section="Ideias"><span class="nav-icon">✳</span> Banco de ideias</button>
-    <button class="nav-item" data-section="Calendário"><span class="nav-icon">▦</span> Calendário</button>
-    <div class="nav-label">CRIAÇÃO</div>
-    <button class="nav-item" data-section="Conteúdo"><span class="nav-icon">▶</span> Conteúdos</button>
-    <button class="nav-item" data-section="Miniaturas"><span class="nav-icon">▣</span> Miniaturas</button>
-    <button class="nav-item" data-section="Radar Gamer"><span class="nav-icon">◎</span> Radar Gamer</button>
-    <div class="nav-label">GESTÃO</div>
-    <button class="nav-item" data-section="Publicações"><span class="nav-icon">↗</span> Publicações</button>
-    <button class="nav-item" data-section="Análises"><span class="nav-icon">▥</span> Análises</button>
+    <button class="nav-item" data-section="Conteúdo"><span class="nav-icon">▧</span> Conteúdo</button>
+    <button class="nav-item" data-section="Suprema Intelligence"><span class="nav-icon">✳</span> Suprema Intelligence</button>
+    <button class="nav-item" data-section="Plataformas"><span class="nav-icon">▣</span> Plataformas</button>
+    <div class="nav-label">CONTA</div>
     <button class="nav-item" data-section="Configurações"><span class="nav-icon">⚙</span> Configurações</button>
-    <div class="sidebar-bottom"><strong style="font-size:12px">Seu espaço criativo</strong><p>Planeje, organize e desenvolva seu conteúdo em um só lugar.</p></div>
+    <div class="sidebar-bottom"><strong style="font-size:12px">Seu espaço criativo</strong><p>Planeje, crie e gerencie seu conteúdo em um só lugar.</p></div>
   </aside>
-
   <main>
-    <div class="mobile-brand">
-      <div class="brand-icon">S</div>
-      <div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div>
+    <div class="mobile-brand"><div class="brand-icon">S</div><div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div></div>
+    <header class="topbar"><div><div class="eyebrow">CREATOR WORKSPACE</div><h1 id="page-title">Seu estúdio.</h1><p class="top-description" id="page-description">Organize suas ideias e transforme planos em conteúdo.</p></div><div class="status"><span class="status-dot"></span>Estrutura inicial</div></header>
+    <div class="account-bar"><span class="account-email" id="account-email">Conta conectada</span><button class="small-btn" id="sign-out" type="button">Sair da conta</button></div>
+    <div id="section-content">
+      <section id="home-view">
+        <div class="welcome"><div class="eyebrow">SEU PRÓXIMO PROJETO COMEÇA AQUI</div><h2>Crie algo que vale a pena assistir.</h2><p>Organize projetos, desenvolva roteiros e prepare seus próximos vídeos, cortes e publicações.</p><button class="primary-btn" data-open="Conteúdo">Abrir área de conteúdo →</button></div>
+        <div class="section-heading"><h2>Visão geral</h2><span>Sem dados fictícios</span></div>
+        <section class="stats"><article class="stat-card"><div class="stat-label">Projetos salvos neste navegador</div><div class="stat-value" id="home-project-count">0</div><div class="stat-note">Os dados locais ainda não sincronizam com o Supabase.</div></article><article class="stat-card"><div class="stat-label">Ideias guardadas</div><div class="stat-value" id="home-idea-count">0</div><div class="stat-note">Contagem dos registros locais deste navegador.</div></article><article class="stat-card"><div class="stat-label">Roteiros</div><div class="stat-value" id="home-script-count">0</div><div class="stat-note">Roteiros guardados localmente.</div></article></section>
+        <div class="section-heading"><h2>Entradas rápidas</h2><span>Áreas principais</span></div>
+        <section class="workspace">
+          <article class="feature-card"><div class="feature-icon">▧</div><h3>Conteúdo</h3><p>Projetos, ideias, calendário, publicações e roteiros num só espaço.</p><button class="text-btn" data-open="Conteúdo">Abrir conteúdo →</button></article>
+          <article class="feature-card"><div class="feature-icon">✳</div><h3>Suprema Intelligence</h3><p>Uma conversa para explorar estratégias e preparar conteúdos.</p><button class="text-btn" data-open="Suprema Intelligence">Conversar com a IA →</button></article>
+          <article class="feature-card"><div class="feature-icon">▣</div><h3>Studios das plataformas</h3><p>Áreas separadas para YouTube, TikTok, Instagram e Twitch.</p><button class="text-btn" data-open="Plataformas">Ver plataformas →</button></article>
+          <article class="feature-card"><div class="feature-icon">⚙</div><h3>Configurações</h3><p>Conta e futuras conexões com serviços externos.</p><button class="text-btn" data-open="Configurações">Abrir configurações →</button></article>
+        </section>
+        <div class="notice"><strong>Importante:</strong> esta reorganização cria a navegação e ferramentas locais iniciais. A IA, sincronização com o banco e integrações de plataformas ainda precisam ser conectadas.</div>
+      </section>
+      <section class="section-view" id="content-view" hidden>
+        <div class="section-heading"><h2>Seu espaço de conteúdo</h2><span>Organização centralizada</span></div>
+        <p class="section-intro">Guarde projetos e ideias, planeje datas, acompanhe publicações e desenvolva roteiros. Nesta primeira etapa, os registros são guardados somente neste navegador e aparelho.</p>
+        <div class="toolbar"><button class="primary-btn" data-content-tab="projetos">Projetos</button><button class="small-btn" data-content-tab="ideias">Ideias</button><button class="small-btn" data-content-tab="calendario">Calendário</button><button class="small-btn" data-content-tab="roteiros">IA de roteiros</button><button class="small-btn" data-content-tab="publicacoes">Publicações</button></div>
+        <div id="content-panel"></div>
+      </section>
+      <section class="section-view" id="intelligence-view" hidden>
+        <div class="section-heading"><h2>Sua central estratégica</h2><span>Conceito inicial</span></div>
+        <p class="section-intro">Converse sobre palavras-chave, títulos, thumbnails, tendências e desempenho. Esta interface ainda não está conectada a um modelo de IA nem a fontes externas, então não apresentará métricas inventadas.</p>
+        <div class="chat-shell"><div class="chat-messages" id="chat-messages"><div class="chat-bubble assistant">Fala, criador! Posso ser a central de estratégia do seu conteúdo. Nesta versão, ainda não consigo pesquisar dados externos ou responder com IA real. Você pode testar a interface e registrar o que quer analisar.</div></div><form class="chat-compose" id="chat-form"><textarea id="chat-input" aria-label="Mensagem para Suprema Intelligence" placeholder="Ex.: pesquise palavras-chave para meu próximo vídeo..." maxlength="3000" required></textarea><button class="primary-btn" type="submit">Enviar</button></form></div>
+        <p class="muted-small">Para fornecer volume de busca, concorrência, tendências e análises reais, será necessário conectar um serviço de IA e fontes de dados adequadas. As conversas atuais não são salvas no banco.</p>
+      </section>
+      <section class="section-view" id="platforms-view" hidden>
+        <div class="section-heading"><h2>Seus Studios</h2><span>Painéis separados</span></div>
+        <p class="section-intro">Cada plataforma terá seu próprio ambiente, inspirado nas ferramentas oficiais. Estes cartões ainda não conectam contas nem exibem dados externos.</p>
+        <div class="platform-grid">
+          <article class="platform-card"><span class="tag">Studio individual</span><h3>YouTube Studio</h3><p>Vídeos, Shorts, lives, comentários, dados do canal e analytics conforme as permissões da API.</p><button class="primary-btn" data-platform="YouTube">Abrir painel →</button></article>
+          <article class="platform-card"><span class="tag">Studio individual</span><h3>TikTok Studio</h3><p>Conteúdos, desempenho e ferramentas compatíveis com as permissões disponíveis.</p><button class="primary-btn" data-platform="TikTok">Abrir painel →</button></article>
+          <article class="platform-card"><span class="tag">Studio individual</span><h3>Instagram Studio</h3><p>Reels, publicações, insights e gerenciamento permitido pelas integrações.</p><button class="primary-btn" data-platform="Instagram">Abrir painel →</button></article>
+          <article class="platform-card"><span class="tag">Studio individual</span><h3>Twitch / Lives</h3><p>Transmissões, dados do canal e recursos compatíveis com a API da Twitch.</p><button class="primary-btn" data-platform="Twitch">Abrir painel →</button></article>
+        </div>
+        <div id="platform-detail" class="panel-card" style="margin-top:14px" hidden></div>
+      </section>
+      <section class="section-view" id="settings-view" hidden>
+        <div class="section-heading"><h2>Configurações</h2><span>Conta e dados</span></div>
+        <div class="panel-card"><h3 style="margin-top:0">Conta atual</h3><p class="section-intro" id="settings-email">Conta autenticada pelo Supabase.</p><div class="divider"></div><h3>Armazenamento local</h3><p class="section-intro">Projetos, ideias, calendário, roteiros e publicações criados nesta versão ficam neste navegador. Eles não sincronizam entre aparelhos nem são enviados ao banco.</p><button class="small-btn" id="export-data" type="button">Exportar meus dados locais (.json)</button></div>
+      </section>
     </div>
-    <header class="topbar">
-      <div>
-        <div class="eyebrow">CREATOR WORKSPACE</div>
-        <h1 id="page-title">Seu estúdio.</h1>
-        <p class="top-description" id="page-description">Organize suas ideias e transforme planos em conteúdo.</p>
-      </div>
-      <div class="status"><span class="status-dot"></span>Interface inicial</div>
-    </header>
-
-    <div class="account-bar">
-      <span class="account-email" id="account-email">Conta conectada</span>
-      <button class="small-btn" id="sign-out" type="button">Sair da conta</button>
-    </div>
-
-    <section class="welcome">
-      <div class="eyebrow">SEU PRÓXIMO PROJETO COMEÇA AQUI</div>
-      <h2>Crie algo que vale a pena assistir.</h2>
-      <p>Reúna ideias, organize projetos e prepare seus próximos vídeos, cortes e publicações sem perder o fio da criação.</p>
-      <button class="primary-btn" id="new-project" type="button" style="width:auto">+ Novo projeto</button>
-    </section>
-
-    <div class="section-heading"><h2>Visão geral</h2><span>Sem dados fictícios</span></div>
-    <section class="stats">
-      <article class="stat-card"><div class="stat-label">Projetos</div><div class="stat-value">—</div><div class="stat-note">Aguardando integração com o banco</div></article>
-      <article class="stat-card"><div class="stat-label">Ideias guardadas</div><div class="stat-value">—</div><div class="stat-note">Seus dados aparecerão aqui</div></article>
-      <article class="stat-card"><div class="stat-label">Publicações</div><div class="stat-value">—</div><div class="stat-note">Nenhuma métrica inventada</div></article>
-    </section>
-
-    <div class="section-heading"><h2>Seu espaço de criação</h2><span>Área de trabalho</span></div>
-    <section class="workspace">
-      <article class="feature-card"><div class="feature-icon">✳</div><h3>Banco de ideias</h3><p>Guarde conceitos para vídeos, lives, cortes e séries.</p><button class="text-btn" data-section="Ideias">Explorar ideias →</button></article>
-      <article class="feature-card"><div class="feature-icon">▧</div><h3>Projetos</h3><p>Organize seus conteúdos do planejamento até a publicação.</p><button class="text-btn" data-section="Projetos">Ver projetos →</button></article>
-      <article class="feature-card"><div class="feature-icon">◎</div><h3>Radar Gamer</h3><p>Prepare o espaço para acompanhar tendências e novidades de jogos.</p><button class="text-btn" data-section="Radar Gamer">Abrir radar →</button></article>
-      <article class="feature-card"><div class="feature-icon">▦</div><h3>Calendário editorial</h3><p>Planeje seus próximos conteúdos e mantenha a organização.</p><button class="text-btn" data-section="Calendário">Ver calendário →</button></article>
-    </section>
-    <div class="notice"><strong>Versão inicial do Suprema Studio.</strong> O login já usa o Supabase. Projetos, ideias, publicações e integrações ainda serão implementados. Nenhuma métrica fictícia é exibida.</div>
   </main>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/config.js"></script>
 <script src="/auth.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const authScreen = $("auth-screen");
-  const appScreen = $("app-screen");
-  const form = $("auth-form");
-  const emailInput = $("auth-email");
-  const passwordInput = $("auth-password");
-  const submit = $("auth-submit");
-  const message = $("auth-message");
-  let mode = "login";
-  let busy = false;
-
-  function showMessage(text, type) {
-    message.textContent = text;
-    message.className = "message " + type;
-    message.hidden = false;
-  }
-
-  function clearMessage() {
-    message.textContent = "";
-    message.hidden = true;
-    message.className = "message";
-  }
-
-  function setMode(nextMode) {
-    mode = nextMode;
-    const signup = mode === "signup";
-    $("auth-title").textContent = signup ? "Crie sua conta." : "Entre no seu estúdio.";
-    $("auth-intro").textContent = signup
-      ? "Cadastre seu e-mail e crie uma senha para acessar seu espaço criativo."
-      : "Acesse sua conta para continuar organizando suas ideias e projetos.";
-    $("auth-submit").textContent = signup ? "Criar conta" : "Entrar";
-    $("auth-switch-label").textContent = signup ? "Já tem uma conta?" : "Ainda não tem uma conta?";
-    $("auth-switch").textContent = signup ? "Fazer login" : "Criar conta";
-    passwordInput.autocomplete = signup ? "new-password" : "current-password";
-    clearMessage();
-  }
-
-  function showApp(user) {
-    authScreen.hidden = true;
-    appScreen.hidden = false;
-    $("account-email").textContent = user.email || "Conta conectada";
-  }
-
-  function showLogin() {
-    appScreen.hidden = true;
-    authScreen.hidden = false;
-    passwordInput.value = "";
-    setMode("login");
-  }
-
-  $("auth-switch").addEventListener("click", () => {
-    setMode(mode === "login" ? "signup" : "login");
-  });
-
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    if (busy) return;
-
-    if (!window.SUPREMA_AUTH) {
-      showMessage("A autenticação não foi carregada. Confira config.js, auth.js e a conexão com o Supabase.", "error");
-      return;
-    }
-
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-
-    if (!email || !password) {
-      showMessage("Preencha o e-mail e a senha.", "error");
-      return;
-    }
-
-    busy = true;
-    submit.disabled = true;
-    submit.textContent = mode === "signup" ? "Criando conta..." : "Entrando...";
-    clearMessage();
-
-    try {
-      if (mode === "signup") {
-        const result = await window.SUPREMA_AUTH.signUp(email, password);
-        if (result.error) throw result.error;
-
-        if (result.data.session) {
-          showApp(result.data.user);
-        } else {
-          showMessage("Cadastro iniciado! Confira sua caixa de entrada e o spam para confirmar o e-mail antes de entrar.", "success");
-          setMode("login");
-          showMessage("Cadastro iniciado! Confirme seu e-mail pelo link enviado. Depois, volte aqui para entrar.", "success");
-        }
-      } else {
-        const result = await window.SUPREMA_AUTH.signIn(email, password);
-        if (result.error) throw result.error;
-        showApp(result.data.user);
-      }
-    } catch (error) {
-      const raw = String(error && error.message || "");
-      let friendly = "Não foi possível concluir. Confira os dados e tente novamente.";
-      if (/invalid login credentials/i.test(raw)) friendly = "E-mail ou senha incorretos.";
-      else if (/email not confirmed/i.test(raw)) friendly = "Confirme seu e-mail pelo link enviado antes de entrar.";
-      else if (/user already registered/i.test(raw)) friendly = "Este e-mail já possui cadastro. Tente fazer login.";
-      else if (/password should be at least/i.test(raw)) friendly = "A senha precisa ter pelo menos 6 caracteres.";
-      else if (/rate limit/i.test(raw)) friendly = "Muitas tentativas em pouco tempo. Aguarde e tente novamente.";
-      else if (/fetch|network/i.test(raw)) friendly = "Falha de conexão. Verifique a internet e tente novamente.";
-      showMessage(friendly, "error");
-    } finally {
-      busy = false;
-      submit.disabled = false;
-      submit.textContent = mode === "signup" ? "Criar conta" : "Entrar";
-    }
-  });
-
-  $("sign-out").addEventListener("click", async () => {
-    if (!window.SUPREMA_AUTH) return;
-    const button = $("sign-out");
-    button.disabled = true;
-    try {
-      const result = await window.SUPREMA_AUTH.signOut();
-      if (result.error) throw result.error;
-      showLogin();
-    } catch (_) {
-      alert("Não foi possível sair da conta. Tente novamente.");
-    } finally {
-      button.disabled = false;
-    }
-  });
-
-  const descriptions = {
-    "Início":"Organize suas ideias e transforme planos em conteúdo.",
-    "Projetos":"Organize seus projetos e acompanhe seu desenvolvimento.",
-    "Ideias":"Reúna conceitos para seus próximos conteúdos.",
-    "Calendário":"Planeje e organize suas publicações.",
-    "Conteúdo":"Prepare vídeos, lives, cortes e outros formatos.",
-    "Miniaturas":"Organize o trabalho visual dos seus conteúdos.",
-    "Radar Gamer":"Prepare sua central de tendências do universo gamer.",
-    "Publicações":"Organize os conteúdos que pretende publicar.",
-    "Análises":"Área reservada para métricas reais das suas contas.",
-    "Configurações":"Ajustes da sua área de trabalho."
+  const authScreen=$("auth-screen"), appScreen=$("app-screen"), form=$("auth-form"), emailInput=$("auth-email"), passwordInput=$("auth-password"), submit=$("auth-submit"), message=$("auth-message");
+  let mode="login",busy=false,currentUser=null;
+  function showMessage(text,type){message.textContent=text;message.className="message "+type;message.hidden=false}
+  function clearMessage(){message.textContent="";message.hidden=true;message.className="message"}
+  function setMode(nextMode){mode=nextMode;const signup=mode==="signup";$("auth-title").textContent=signup?"Crie sua conta.":"Entre no seu estúdio.";$("auth-intro").textContent=signup?"Cadastre seu e-mail e crie uma senha para acessar seu espaço criativo.":"Acesse sua conta para continuar organizando suas ideias e projetos.";$("auth-submit").textContent=signup?"Criar conta":"Entrar";$("auth-switch-label").textContent=signup?"Já tem uma conta?":"Ainda não tem uma conta?";$("auth-switch").textContent=signup?"Fazer login":"Criar conta";passwordInput.autocomplete=signup?"new-password":"current-password";clearMessage()}
+  function showApp(user){currentUser=user;authScreen.hidden=true;appScreen.hidden=false;$("account-email").textContent=user.email||"Conta conectada";$("settings-email").textContent=user.email||"Conta autenticada pelo Supabase.";updateCounts();openSection("Início")}
+  function showLogin(){currentUser=null;appScreen.hidden=true;authScreen.hidden=false;passwordInput.value="";setMode("login")}
+  $("auth-switch").addEventListener("click",()=>setMode(mode==="login"?"signup":"login"));
+  form.addEventListener("submit",async event=>{event.preventDefault();if(busy)return;if(!window.SUPREMA_AUTH){showMessage("A autenticação não foi carregada. Confira config.js, auth.js e a conexão com o Supabase.","error");return}const email=emailInput.value.trim(),password=passwordInput.value;if(!email||!password){showMessage("Preencha o e-mail e a senha.","error");return}busy=true;submit.disabled=true;submit.textContent=mode==="signup"?"Criando conta...":"Entrando...";clearMessage();try{if(mode==="signup"){const result=await window.SUPREMA_AUTH.signUp(email,password);if(result.error)throw result.error;if(result.data.session)showApp(result.data.user);else{showMessage("Cadastro iniciado! Confirme seu e-mail pelo link enviado. Depois, volte aqui para entrar.","success");setMode("login");showMessage("Cadastro iniciado! Confirme seu e-mail pelo link enviado. Depois, volte aqui para entrar.","success")}}else{const result=await window.SUPREMA_AUTH.signIn(email,password);if(result.error)throw result.error;showApp(result.data.user)}}catch(error){const raw=String(error&&error.message||"");let friendly="Não foi possível concluir. Confira os dados e tente novamente.";if(/invalid login credentials/i.test(raw))friendly="E-mail ou senha incorretos.";else if(/email not confirmed/i.test(raw))friendly="Confirme seu e-mail pelo link enviado antes de entrar.";else if(/user already registered/i.test(raw))friendly="Este e-mail já possui cadastro. Tente fazer login.";else if(/password should be at least/i.test(raw))friendly="A senha precisa ter pelo menos 6 caracteres.";else if(/rate limit/i.test(raw))friendly="Muitas tentativas em pouco tempo. Aguarde e tente novamente.";else if(/fetch|network/i.test(raw))friendly="Falha de conexão. Verifique a internet e tente novamente.";showMessage(friendly,"error")}finally{busy=false;submit.disabled=false;submit.textContent=mode==="signup"?"Criar conta":"Entrar"}});
+  $("sign-out").addEventListener("click",async()=>{if(!window.SUPREMA_AUTH)return;const button=$("sign-out");button.disabled=true;try{const result=await window.SUPREMA_AUTH.signOut();if(result.error)throw result.error;showLogin()}catch(_){alert("Não foi possível sair da conta. Tente novamente.")}finally{button.disabled=false}});
+  const sections={"Início":{view:"home-view",description:"Organize suas ideias e transforme planos em conteúdo."},"Conteúdo":{view:"content-view",description:"Projetos, ideias, calendário, roteiros e publicações em uma única área."},"Suprema Intelligence":{view:"intelligence-view",description:"Uma central para pesquisar, analisar e planejar seus próximos conteúdos."},"Plataformas":{view:"platforms-view",description:"Acesse os ambientes individuais de cada plataforma."},"Configurações":{view:"settings-view",description:"Gerencie sua conta e seus dados locais."}};
+  function openSection(name){if(!sections[name])return;document.querySelectorAll(".nav-item").forEach(item=>item.classList.toggle("active",item.dataset.section===name));Object.values(sections).forEach(s=>$(s.view).hidden=true);$(sections[name].view).hidden=false;$("page-title").textContent=name==="Início"?"Seu estúdio.":name+"."; $("page-description").textContent=sections[name].description; if(name==="Conteúdo")renderContentTab(activeContentTab)}
+  document.querySelectorAll(".nav-item").forEach(item=>item.addEventListener("click",()=>openSection(item.dataset.section)));
+  document.querySelectorAll("[data-open]").forEach(button=>button.addEventListener("click",()=>openSection(button.dataset.open)));
+  const STORAGE_KEY="supremaStudioLocalV1";
+  function loadData(){try{const parsed=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");return {projetos:Array.isArray(parsed.projetos)?parsed.projetos:[],ideias:Array.isArray(parsed.ideias)?parsed.ideias:[],calendario:Array.isArray(parsed.calendario)?parsed.calendario:[],roteiros:Array.isArray(parsed.roteiros)?parsed.roteiros:[],publicacoes:Array.isArray(parsed.publicacoes)?parsed.publicacoes:[]}}catch(_){return {projetos:[],ideias:[],calendario:[],roteiros:[],publicacoes:[]}}}
+  let data=loadData();let activeContentTab="projetos";
+  function saveData(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));updateCounts();return true}catch(_){alert("Não foi possível guardar neste aparelho. Verifique o espaço disponível no navegador.");return false}}
+  function updateCounts(){$("home-project-count").textContent=data.projetos.length;$("home-idea-count").textContent=data.ideias.length;$("home-script-count").textContent=data.roteiros.length}
+  function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]))}
+  function listMarkup(items){if(!items.length)return '<div class="empty-state">Nada salvo aqui ainda. Use o formulário acima para adicionar o primeiro registro.<br>Estes dados ficam somente neste navegador.</div>';return '<div class="item-list">'+items.slice().reverse().map(item=>'<article class="saved-item"><h3>'+escapeHtml(item.title)+'</h3><p>'+escapeHtml(item.body||"")+'</p><div class="item-meta">'+escapeHtml([item.date,item.platform,item.status].filter(Boolean).join(" · "))+'</div><div style="margin-top:10px"><button class="small-btn" data-delete="'+escapeHtml(item.id)+'" data-kind="'+escapeHtml(item.kind)+'" type="button">Excluir</button></div></article>').join("")+'</div>'}
+  function formMarkup(kind,fields,buttonLabel){return '<form class="panel-card" id="record-form"><div class="form-grid">'+fields.map(field=>{if(field.type==="textarea")return '<label class="field"><span>'+field.label+'</span><textarea name="'+field.name+'" placeholder="'+(field.placeholder||"")+'" '+(field.required?"required":"")+' maxlength="10000"></textarea></label>';if(field.type==="select")return '<label class="field"><span>'+field.label+'</span><select name="'+field.name+'" '+(field.required?"required":"")+'>'+field.options.map(o=>'<option value="'+escapeHtml(o.value)+'">'+escapeHtml(o.label)+'</option>').join("")+'</select></label>';return '<label class="field"><span>'+field.label+'</span><input class="control" name="'+field.name+'" type="'+(field.type||"text")+'" placeholder="'+(field.placeholder||"")+'" '+(field.required?"required":"")+' maxlength="180"></label>'}).join("")+'</div><button class="primary-btn" type="submit" style="margin-top:12px">'+buttonLabel+'</button></form>'}
+  const contentConfig={
+    projetos:{title:"Projetos",desc:"Registre o conceito e o andamento de cada projeto.",kind:"projetos",fields:[{name:"title",label:"Nome do projeto",placeholder:"Ex.: Série de Fortnite",required:true},{name:"platform",label:"Plataforma",type:"select",options:[{value:"Multiplataforma",label:"Multiplataforma"},{value:"YouTube",label:"YouTube"},{value:"TikTok",label:"TikTok"},{value:"Instagram",label:"Instagram"},{value:"Twitch",label:"Twitch"}]},{name:"status",label:"Etapa",type:"select",options:[{value:"Ideia",label:"Ideia"},{value:"Planejamento",label:"Planejamento"},{value:"Em produção",label:"Em produção"},{value:"Concluído",label:"Concluído"}]},{name:"body",label:"Descrição",type:"textarea",placeholder:"Objetivo, formato, referências...",required:true}]},
+    ideias:{title:"Banco de ideias",desc:"Guarde ideias para desenvolver depois.",kind:"ideias",fields:[{name:"title",label:"Título da ideia",placeholder:"Uma ideia para vídeo...",required:true},{name:"platform",label:"Plataforma",type:"select",options:[{value:"Multiplataforma",label:"Multiplataforma"},{value:"YouTube",label:"YouTube"},{value:"TikTok",label:"TikTok"},{value:"Instagram",label:"Instagram"},{value:"Twitch",label:"Twitch"}]},{name:"body",label:"Detalhes",type:"textarea",placeholder:"Qual é a ideia?",required:true}]},
+    calendario:{title:"Calendário editorial",desc:"Planeje conteúdos por data. Isso ainda não publica nem agenda nas plataformas.",kind:"calendario",fields:[{name:"title",label:"Conteúdo",placeholder:"O que pretende publicar?",required:true},{name:"date",label:"Data planejada",type:"date",required:true},{name:"platform",label:"Plataforma",type:"select",options:[{value:"YouTube",label:"YouTube"},{value:"TikTok",label:"TikTok"},{value:"Instagram",label:"Instagram"},{value:"Twitch",label:"Twitch"},{value:"Multiplataforma",label:"Multiplataforma"}]},{name:"status",label:"Situação",type:"select",options:[{value:"Planejado",label:"Planejado"},{value:"Em produção",label:"Em produção"},{value:"Pronto",label:"Pronto"}]},{name:"body",label:"Observações",type:"textarea",placeholder:"Notas para esse conteúdo..."}]},
+    roteiros:{title:"Assistente de roteiros",desc:"Organize o briefing do roteiro. A geração automática por IA será conectada numa etapa posterior.",kind:"roteiros",fields:[{name:"title",label:"Tema ou título",placeholder:"Ex.: 5 dicas de Fortnite no PS4",required:true},{name:"platform",label:"Plataforma e formato",type:"select",options:[{value:"YouTube — vídeo longo",label:"YouTube — vídeo longo"},{value:"YouTube — Shorts",label:"YouTube — Shorts"},{value:"TikTok",label:"TikTok"},{value:"Instagram — Reels",label:"Instagram — Reels"},{value:"Twitch — live",label:"Twitch — live"}]},{name:"body",label:"Briefing e objetivo",type:"textarea",placeholder:"Público, tom de voz, pontos obrigatórios e duração...",required:true}]},
+    publicacoes:{title:"Publicações",desc:"Registre publicações e acompanhe o status manualmente. Não envia posts às plataformas.",kind:"publicacoes",fields:[{name:"title",label:"Título da publicação",placeholder:"Título do vídeo ou post",required:true},{name:"platform",label:"Plataforma",type:"select",options:[{value:"YouTube",label:"YouTube"},{value:"TikTok",label:"TikTok"},{value:"Instagram",label:"Instagram"},{value:"Twitch",label:"Twitch"}]},{name:"status",label:"Status",type:"select",options:[{value:"Rascunho",label:"Rascunho"},{value:"Pronto para publicar",label:"Pronto para publicar"},{value:"Publicado manualmente",label:"Publicado manualmente"}]},{name:"body",label:"Link ou notas",type:"textarea",placeholder:"Link do post ou observações..."}]}
   };
-
-  function openSection(section) {
-    document.querySelectorAll(".nav-item").forEach(item => {
-      item.classList.toggle("active", item.dataset.section === section);
-    });
-    $("page-title").textContent = section === "Início" ? "Seu estúdio." : section + ".";
-    $("page-description").textContent = descriptions[section] || "Sua área de trabalho.";
-    if (section !== "Início") alert(section + ": esta área ainda será implementada.");
-  }
-
-  document.querySelectorAll("[data-section]").forEach(item => {
-    item.addEventListener("click", () => openSection(item.dataset.section));
-  });
-
-  $("new-project").addEventListener("click", () => {
-    alert("A criação de projetos será conectada ao banco na próxima etapa.");
-  });
-
-  async function initialize() {
-    if (!window.SUPREMA_AUTH) {
-      showMessage("Não foi possível carregar a autenticação. Verifique se config.js contém sua chave publicável e se os scripts estão carregando.", "error");
-      return;
-    }
-
-    try {
-      const result = await window.SUPREMA_AUTH.getSession();
-      if (result.error) throw result.error;
-      if (result.data.session) showApp(result.data.session.user);
-      else showLogin();
-
-      window.SUPREMA_AUTH.onAuthStateChange((event, session) => {
-        if (session) showApp(session.user);
-        else showLogin();
-      });
-    } catch (_) {
-      showMessage("Falha ao verificar sua sessão. Atualize a página e tente novamente.", "error");
-    }
-  }
-
-  initialize();
+  function renderContentTab(tab){activeContentTab=tab;const cfg=contentConfig[tab];if(!cfg)return;document.querySelectorAll("[data-content-tab]").forEach(b=>{const active=b.dataset.contentTab===tab;b.className=active?"primary-btn":"small-btn"});const items=data[cfg.kind];$("content-panel").innerHTML='<div class="section-heading"><h2>'+cfg.title+'</h2><span>'+items.length+' registro(s)</span></div><p class="section-intro">'+cfg.desc+'</p>'+formMarkup(cfg.kind,cfg.fields,"Salvar") +listMarkup(items);const recordForm=$("record-form");recordForm.addEventListener("submit",event=>{event.preventDefault();const fd=new FormData(recordForm);const item={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),kind:cfg.kind,title:String(fd.get("title")||"").trim(),body:String(fd.get("body")||"").trim(),platform:String(fd.get("platform")||""),status:String(fd.get("status")||""),date:String(fd.get("date")||"")};if(!item.title){alert("Preencha o título.");return}data[cfg.kind].push(item);if(saveData())renderContentTab(tab)});$("content-panel").querySelectorAll("[data-delete]").forEach(button=>button.addEventListener("click",()=>{if(!confirm("Excluir este registro deste navegador?"))return;const kind=button.dataset.kind;data[kind]=data[kind].filter(item=>item.id!==button.dataset.delete);saveData();renderContentTab(tab)}))}
+  document.querySelectorAll("[data-content-tab]").forEach(button=>button.addEventListener("click",()=>renderContentTab(button.dataset.contentTab)));
+  document.querySelectorAll("[data-platform]").forEach(button=>button.addEventListener("click",()=>{const name=button.dataset.platform,detail=$("platform-detail");detail.hidden=false;detail.innerHTML='<h3 style="margin-top:0">'+escapeHtml(name)+(name==="Twitch"?" / Lives":" Studio")+'</h3><p class="section-intro">Este painel está reservado para as funções específicas de '+escapeHtml(name)+'. Ainda não há conta externa conectada nem dados carregados.</p><div class="empty-state">Próxima etapa: implementar recursos reais e conectar a API oficial quando disponível. Nenhuma informação de canal será simulada.</div>'}));
+  $("chat-form").addEventListener("submit",event=>{event.preventDefault();const input=$("chat-input"),text=input.value.trim();if(!text)return;const bubble=document.createElement("div");bubble.className="chat-bubble user";bubble.textContent=text;$("chat-messages").appendChild(bubble);const response=document.createElement("div");response.className="chat-bubble assistant";response.textContent="Recebi seu pedido. A interface da Suprema Intelligence já está preparada, mas ainda não há um modelo de IA nem fontes de pesquisa conectados. Quando integrarmos esses serviços, esta conversa poderá consultar seus projetos, calendário e publicações autorizadas. Por enquanto, não consigo fornecer métricas, tendências ou recomendações baseadas em dados externos."; $("chat-messages").appendChild(response);input.value="";$("chat-messages").scrollTop=$("chat-messages").scrollHeight});
+  $("export-data").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="suprema-studio-dados-locais.json";a.click();URL.revokeObjectURL(url)});
+  async function initialize(){if(!window.SUPREMA_AUTH){showMessage("Não foi possível carregar a autenticação. Verifique config.js e auth.js.","error");return}try{const result=await window.SUPREMA_AUTH.getSession();if(result.error)throw result.error;if(result.data.session)showApp(result.data.session.user);else showLogin();window.SUPREMA_AUTH.onAuthStateChange((event,session)=>{if(session)showApp(session.user);else showLogin()})}catch(_){showMessage("Falha ao verificar sua sessão. Atualize a página e tente novamente.","error")}}
+  updateCounts();initialize();
 })();
 </script>
 </body>
