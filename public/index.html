@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -8,288 +7,181 @@
 <meta name="description" content="Suprema Studio — central de criação e gestão de conteúdo gamer.">
 <title>Suprema Studio</title>
 <style>
-:root{color-scheme:dark;--bg:#101010;--panel:#181818;--light:#202020;--border:#303030;--text:#f5f5f5;--muted:#999;--red:#e63946}
+:root{color-scheme:dark;--bg:#0d0d0f;--panel:#151518;--panel2:#1b1b20;--border:#2b2b32;--text:#f5f5f7;--muted:#9a9aa5;--red:#e63946;--red2:#ff5a65;--green:#70d994}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}
-button,input{font:inherit}button{cursor:pointer}
-button:focus-visible,input:focus-visible{outline:2px solid #ff777e;outline-offset:3px}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,textarea,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--red2);outline-offset:3px}
 [hidden]{display:none!important}
-.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px}
-.auth-card{width:100%;max-width:420px;padding:30px;background:var(--panel);border:1px solid var(--border);border-radius:18px}
+.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,#2a1519 0%,transparent 50%),var(--bg)}
+.auth-card{width:100%;max-width:430px;padding:30px;background:rgba(21,21,24,.96);border:1px solid var(--border);border-radius:20px;box-shadow:0 25px 80px #0007}
 .brand{display:flex;align-items:center;gap:11px;margin-bottom:28px}
-.brand-icon{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:12px;background:var(--red);font-size:20px;font-weight:900}
-.brand-name{font-weight:850;letter-spacing:-.5px}
-.brand-sub{margin-top:3px;color:var(--muted);font-size:11px}
-.eyebrow{color:var(--red);font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
-.auth-card h1{margin:10px 0;font-size:28px;letter-spacing:-1px}
-.auth-intro{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 23px}
-.field{display:block;margin:16px 0}
-.field span{display:block;margin-bottom:8px;font-size:12px;font-weight:700}
-.field input{width:100%;padding:13px;background:#101010;border:1px solid var(--border);border-radius:9px;color:white}
-.field input:focus{border-color:var(--red);outline:none}
-.primary-btn{width:100%;padding:13px 15px;color:white;background:var(--red);border:0;border-radius:9px;font-size:13px;font-weight:800}
-.primary-btn:disabled{opacity:.6;cursor:wait}
-.auth-switch{margin:20px 0 0;text-align:center;color:var(--muted);font-size:12px;line-height:1.8}
-.text-btn{padding:0;color:#ff777e;background:none;border:0;font-weight:750}
-.message{margin:14px 0 0;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
-.message.error{color:#ffb7bb;border-color:#71363b;background:#271719}
-.message.success{color:#b8e9c5;border-color:#2d4834;background:#18251b}
+.brand-icon{display:grid;place-items:center;flex-shrink:0;width:41px;height:41px;border-radius:13px;background:linear-gradient(135deg,var(--red2),#b91f2b);font-size:20px;font-weight:950;box-shadow:0 7px 24px #e6394626}
+.brand-name{font-weight:900;letter-spacing:.5px;font-size:13px}.brand-sub{margin-top:4px;color:var(--muted);font-size:11px}
+.eyebrow{color:var(--red2);font-size:10px;font-weight:850;letter-spacing:2px;text-transform:uppercase}
+.auth-card h1{margin:10px 0;font-size:29px;letter-spacing:-1.2px}.auth-intro{color:var(--muted);font-size:13px;line-height:1.7;margin:0 0 23px}
+.field{display:block;margin:16px 0}.field span{display:block;margin-bottom:8px;font-size:12px;font-weight:750}
+.field input,.field textarea,.field select{width:100%;padding:13px;background:#0d0d0f;border:1px solid var(--border);border-radius:10px;color:white}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--red);outline:none}
+.primary-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;color:white;background:linear-gradient(135deg,var(--red2),#c92734);border:0;border-radius:10px;font-size:12px;font-weight:850;box-shadow:0 7px 20px #e6394617}
+.primary-btn:disabled{opacity:.6;cursor:wait}.auth-card .primary-btn{width:100%;padding:14px}
+.secondary-btn{padding:10px 13px;color:#eee;background:#232328;border:1px solid #383840;border-radius:9px;font-size:12px;font-weight:750}
+.auth-switch{margin:20px 0 0;text-align:center;color:var(--muted);font-size:12px;line-height:1.8}.text-btn{padding:0;color:#ff777e;background:none;border:0;font-weight:800;font-size:12px}
+.message{margin:14px 0 0;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.message.error{color:#ffb7bb;border-color:#71363b;background:#271719}.message.success{color:#b8e9c5;border-color:#2d4834;background:#18251b}
 .auth-foot{margin-top:23px;color:#777;font-size:10px;line-height:1.6;text-align:center}
-.app{min-height:100vh;display:grid;grid-template-columns:245px minmax(0,1fr)}
-.sidebar{padding:25px 17px;border-right:1px solid var(--border);background:#141414}
-.sidebar .brand{padding:0 8px 28px}
-.nav-label{margin:19px 9px 9px;color:#777;font-size:10px;font-weight:800;letter-spacing:1.5px}
-.nav-item{display:flex;align-items:center;gap:11px;width:100%;padding:12px;margin:3px 0;color:#aaa;background:transparent;border:1px solid transparent;border-radius:9px;text-align:left;font-size:13px}
-.nav-item.active{color:white;background:#292020;border-color:#49272b}
-.nav-icon{width:20px;text-align:center;font-size:16px}
-.sidebar-bottom{margin-top:35px;padding:15px 12px;background:var(--panel);border:1px solid var(--border);border-radius:12px}
-.sidebar-bottom p{margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
-main{min-width:0;padding:30px clamp(18px,4vw,48px)}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;padding-bottom:25px;border-bottom:1px solid var(--border)}
-h1{margin:8px 0 0;font-size:clamp(25px,4vw,35px);letter-spacing:-1.3px}
-.top-description{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.6}
-.status{display:flex;align-items:center;gap:8px;padding:9px 12px;color:#b8e9c5;background:#18251b;border:1px solid #2d4834;border-radius:20px;font-size:11px}
-.status-dot{width:7px;height:7px;background:#65d483;border-radius:50%}
-.account-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding:12px 14px;background:var(--panel);border:1px solid var(--border);border-radius:10px;font-size:12px}
-.account-email{min-width:0;overflow-wrap:anywhere;color:#ccc}
-.small-btn{padding:8px 11px;color:white;background:#292020;border:1px solid #49272b;border-radius:7px;font-size:11px}
-.welcome{margin-top:27px;padding:25px;border:1px solid #392326;border-radius:15px;background:radial-gradient(ellipse at 90% 10%,#452124 0%,transparent 45%),linear-gradient(120deg,#211719,#181818 70%)}
-.welcome h2{margin:0;font-size:22px;letter-spacing:-.5px}
-.welcome p{max-width:510px;margin:10px 0 20px;color:#b7b0b0;font-size:13px;line-height:1.7}
-.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:30px 0 15px}
-.section-heading h2{margin:0;font-size:16px}
-.section-heading span{color:var(--muted);font-size:11px}
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
-.stat-card,.feature-card{padding:17px;background:var(--panel);border:1px solid var(--border);border-radius:12px}
-.stat-label{color:var(--muted);font-size:12px}
-.stat-value{margin-top:14px;font-size:24px;font-weight:800}
-.stat-note{margin-top:7px;color:#777;font-size:10px;line-height:1.5}
-.workspace{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-.feature-card{padding:19px}
-.feature-icon{display:grid;place-items:center;width:37px;height:37px;background:var(--light);border:1px solid #343434;border-radius:10px;font-size:18px}
-.feature-card h3{margin:15px 0 7px;font-size:14px}
-.feature-card p{min-height:37px;margin:0 0 15px;color:var(--muted);font-size:12px;line-height:1.6}
-.notice{margin-top:25px;padding:14px 16px;color:#aaa;background:#151515;border:1px solid var(--border);border-radius:10px;font-size:11px;line-height:1.7}
-.notice strong{color:#ddd}
+.app{min-height:100vh;display:grid;grid-template-columns:255px minmax(0,1fr)}
+.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:22px 15px;border-right:1px solid var(--border);background:#111113}
+.sidebar .brand{padding:0 8px 23px;margin-bottom:12px;border-bottom:1px solid #25252a}
+.nav-label{margin:20px 9px 8px;color:#73737e;font-size:9px;font-weight:900;letter-spacing:1.45px}
+.nav-item{display:flex;align-items:center;gap:11px;width:100%;padding:10px 11px;margin:3px 0;color:#a5a5af;background:transparent;border:1px solid transparent;border-radius:9px;text-align:left;font-size:12px;transition:background .15s,color .15s}
+.nav-item:hover{background:#1d1d22;color:white}.nav-item.active{color:white;background:linear-gradient(90deg,#382024,#25191b);border-color:#4c292e}
+.nav-icon{display:grid;place-items:center;width:20px;flex-shrink:0;color:#aaa;font-size:15px}.nav-item.active .nav-icon{color:var(--red2)}
+.sidebar-bottom{margin-top:25px;padding:14px 12px;background:var(--panel);border:1px solid var(--border);border-radius:12px}.sidebar-bottom p{margin:7px 0 0;color:var(--muted);font-size:11px;line-height:1.6}
+main{min-width:0;padding:28px clamp(18px,3.6vw,48px) 45px;max-width:1600px;width:100%;margin:0 auto}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+h1{margin:8px 0 0;font-size:clamp(26px,3vw,36px);letter-spacing:-1.5px}.top-description{margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
+.status{display:flex;align-items:center;gap:8px;padding:9px 12px;color:#b8e9c5;background:#18251b;border:1px solid #2d4834;border-radius:20px;font-size:10px;white-space:nowrap}.status-dot{width:7px;height:7px;background:var(--green);border-radius:50%}
+.account-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:15px;padding:10px 12px;background:#121214;border:1px solid #26262c;border-radius:10px;font-size:11px}
+.account-email{min-width:0;overflow-wrap:anywhere;color:#c8c8d0}.small-btn{padding:8px 10px;color:white;background:#292020;border:1px solid #49272b;border-radius:7px;font-size:10px}
+.welcome{position:relative;overflow:hidden;margin-top:23px;padding:clamp(22px,3vw,32px);border:1px solid #48252b;border-radius:17px;background:radial-gradient(ellipse at 85% 10%,#552329 0%,transparent 42%),linear-gradient(115deg,#211619,#171719 70%)}
+.welcome:after{content:"S";position:absolute;right:4%;top:-40px;font-size:220px;line-height:1;font-weight:950;color:#ffffff05;pointer-events:none}
+.welcome h2{position:relative;margin:10px 0 0;font-size:clamp(21px,2.5vw,28px);letter-spacing:-.8px}.welcome p{position:relative;max-width:540px;margin:10px 0 19px;color:#c0b5b7;font-size:12px;line-height:1.8}.welcome .primary-btn{position:relative}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:28px 0 13px}.section-heading h2{margin:0;font-size:15px;letter-spacing:-.2px}.section-heading span{color:var(--muted);font-size:10px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.stat-card,.feature-card,.platform-card{padding:17px;background:var(--panel);border:1px solid var(--border);border-radius:13px}
+.stat-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.stat-label{color:var(--muted);font-size:11px}.stat-icon{display:grid;place-items:center;width:31px;height:31px;color:#ff9299;background:#2b191d;border-radius:9px;font-size:15px}
+.stat-value{margin-top:13px;font-size:25px;font-weight:850;letter-spacing:-.7px}.stat-note{margin-top:6px;color:#777782;font-size:10px;line-height:1.5}
+.workspace{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.feature-card{padding:18px;transition:transform .15s,border-color .15s}.feature-card:hover,.platform-card:hover{transform:translateY(-2px);border-color:#4a3438}
+.feature-icon{display:grid;place-items:center;width:38px;height:38px;color:#ff9aa0;background:#2b191d;border:1px solid #4a282d;border-radius:11px;font-size:17px}
+.feature-card h3{margin:14px 0 7px;font-size:13px}.feature-card p{min-height:38px;margin:0 0 14px;color:var(--muted);font-size:11px;line-height:1.7}
+.platforms{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.platform-card{min-width:0;padding:16px;transition:transform .15s,border-color .15s}
+.platform-top{display:flex;align-items:center;gap:10px}.platform-logo{display:grid;place-items:center;width:36px;height:36px;flex-shrink:0;border-radius:10px;background:#25252a;font-size:16px;font-weight:900}.platform-card h3{margin:13px 0 6px;font-size:12px}.platform-card p{min-height:34px;margin:0;color:var(--muted);font-size:10px;line-height:1.6}.pill{display:inline-flex;align-items:center;gap:5px;margin-top:13px;padding:5px 7px;color:#c4c4cd;background:#222227;border:1px solid #34343c;border-radius:20px;font-size:9px}
+.notice{margin-top:23px;padding:13px 15px;color:#9c9ca6;background:#131315;border:1px solid var(--border);border-radius:10px;font-size:10px;line-height:1.8}.notice strong{color:#e0e0e5}
+.page-panel{margin-top:24px;padding:22px;background:var(--panel);border:1px solid var(--border);border-radius:14px}.page-panel h2{margin:0 0 7px;font-size:17px}.page-panel>p{color:var(--muted);font-size:12px;line-height:1.8}.panel-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.mini-panel{padding:16px;border:1px solid var(--border);background:#121214;border-radius:11px}.mini-panel h3{margin:0 0 7px;font-size:12px}.mini-panel p{margin:0;color:var(--muted);font-size:11px;line-height:1.7}.page-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
 .mobile-brand{display:none}
+@media(max-width:1100px){.app{grid-template-columns:225px minmax(0,1fr)}.platforms{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){
-.auth-card{padding:24px 20px}
-.app{display:block}.sidebar{display:none}
-main{padding:20px 16px 35px}
-.mobile-brand{display:flex;align-items:center;gap:10px;margin-bottom:25px}
-.mobile-brand .brand{margin:0}
-.topbar{align-items:flex-start}
-.status{padding:8px;font-size:0}.status-dot{width:8px;height:8px}
-.welcome{padding:21px 18px}
-.stats,.workspace{grid-template-columns:1fr}
-.stat-card{padding:15px}.stat-value{margin-top:9px}
-.feature-card p{min-height:auto}
+.auth-card{padding:24px 20px}.app{display:block}.sidebar{display:none}main{padding:18px 14px 30px}.mobile-brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}.mobile-brand .brand{margin:0}.topbar{align-items:flex-start}.status{padding:8px;font-size:0}.status-dot{width:8px;height:8px}.welcome{padding:22px 18px}.stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.stat-card{padding:12px 10px}.stat-label{font-size:10px}.stat-value{font-size:21px}.stat-note{font-size:9px}.workspace{grid-template-columns:1fr}.feature-card p{min-height:auto}.platforms{grid-template-columns:repeat(2,minmax(0,1fr))}.panel-grid{grid-template-columns:1fr}.page-panel{padding:17px}
 }
+@media(max-width:380px){.stats{grid-template-columns:1fr}.platforms{grid-template-columns:1fr}.account-bar{align-items:flex-start}.welcome h2{font-size:21px}}
 </style>
 </head>
 <body>
-
 <section class="auth-screen" id="auth-screen">
   <div class="auth-card">
-    <div class="brand">
-      <div class="brand-icon">S</div>
-      <div>
-        <div class="brand-name">SUPREMA STUDIO</div>
-        <div class="brand-sub">Central do criador</div>
-      </div>
-    </div>
+    <div class="brand"><div class="brand-icon">S</div><div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div></div>
     <div class="eyebrow">SEU ESPAÇO CRIATIVO</div>
     <h1 id="auth-title">Entre no seu estúdio.</h1>
     <p class="auth-intro" id="auth-intro">Acesse sua conta para continuar organizando suas ideias e projetos.</p>
-
     <form id="auth-form">
-      <label class="field">
-        <span>E-mail</span>
-        <input id="auth-email" type="email" autocomplete="email" placeholder="voce@exemplo.com" maxlength="254" required>
-      </label>
-      <label class="field">
-        <span>Senha</span>
-        <input id="auth-password" type="password" autocomplete="current-password" placeholder="Sua senha" minlength="6" maxlength="128" required>
-      </label>
+      <label class="field"><span>E-mail</span><input id="auth-email" type="email" autocomplete="email" placeholder="voce@exemplo.com" maxlength="254" required></label>
+      <label class="field"><span>Senha</span><input id="auth-password" type="password" autocomplete="current-password" placeholder="Sua senha" minlength="6" maxlength="128" required></label>
       <button class="primary-btn" id="auth-submit" type="submit">Entrar</button>
     </form>
-
     <div id="auth-message" class="message" role="status" aria-live="polite" hidden></div>
-    <p class="auth-switch">
-      <span id="auth-switch-label">Ainda não tem uma conta?</span>
-      <button type="button" class="text-btn" id="auth-switch">Criar conta</button>
-    </p>
+    <p class="auth-switch"><span id="auth-switch-label">Ainda não tem uma conta?</span> <button type="button" class="text-btn" id="auth-switch">Criar conta</button></p>
     <div class="auth-foot">Sua conta é gerenciada pelo Supabase. Nunca compartilhe sua senha.</div>
   </div>
 </section>
 
 <div class="app" id="app-screen" hidden>
   <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-icon">S</div>
-      <div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div>
-    </div>
+    <div class="brand"><div class="brand-icon">S</div><div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div></div>
     <div class="nav-label">ESPAÇO DE TRABALHO</div>
     <button class="nav-item active" data-section="Início"><span class="nav-icon">⌂</span> Início</button>
     <button class="nav-item" data-section="Projetos"><span class="nav-icon">▧</span> Projetos</button>
     <button class="nav-item" data-section="Ideias"><span class="nav-icon">✳</span> Banco de ideias</button>
     <button class="nav-item" data-section="Calendário"><span class="nav-icon">▦</span> Calendário</button>
-    <div class="nav-label">CRIAÇÃO</div>
-    <button class="nav-item" data-section="Conteúdo"><span class="nav-icon">▶</span> Conteúdos</button>
-    <button class="nav-item" data-section="Miniaturas"><span class="nav-icon">▣</span> Miniaturas</button>
-    <button class="nav-item" data-section="Radar Gamer"><span class="nav-icon">◎</span> Radar Gamer</button>
+    <div class="nav-label">PLATAFORMAS</div>
+    <button class="nav-item" data-section="YouTube Studio"><span class="nav-icon">▶</span> YouTube Studio</button>
+    <button class="nav-item" data-section="TikTok Studio"><span class="nav-icon">♪</span> TikTok Studio</button>
+    <button class="nav-item" data-section="Instagram"><span class="nav-icon">◎</span> Instagram</button>
+    <button class="nav-item" data-section="Twitch / Lives"><span class="nav-icon">◉</span> Twitch / Lives</button>
+    <div class="nav-label">INTELIGÊNCIA DE CONTEÚDO</div>
+    <button class="nav-item" data-section="Radar Gamer"><span class="nav-icon">◈</span> Radar Gamer</button>
+    <button class="nav-item" data-section="Palavras-chave"><span class="nav-icon">⌕</span> Pesquisa de palavras-chave</button>
+    <button class="nav-item" data-section="Assistente de criação"><span class="nav-icon">✦</span> Assistente de criação</button>
     <div class="nav-label">GESTÃO</div>
+    <button class="nav-item" data-section="Conteúdo"><span class="nav-icon">▤</span> Conteúdos</button>
+    <button class="nav-item" data-section="Miniaturas"><span class="nav-icon">▣</span> Miniaturas</button>
     <button class="nav-item" data-section="Publicações"><span class="nav-icon">↗</span> Publicações</button>
     <button class="nav-item" data-section="Análises"><span class="nav-icon">▥</span> Análises</button>
     <button class="nav-item" data-section="Configurações"><span class="nav-icon">⚙</span> Configurações</button>
     <div class="sidebar-bottom"><strong style="font-size:12px">Seu espaço criativo</strong><p>Planeje, organize e desenvolva seu conteúdo em um só lugar.</p></div>
   </aside>
-
   <main>
-    <div class="mobile-brand">
-      <div class="brand-icon">S</div>
-      <div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div>
+    <div class="mobile-brand"><div class="brand-icon">S</div><div><div class="brand-name">SUPREMA STUDIO</div><div class="brand-sub">Central do criador</div></div></div>
+    <header class="topbar"><div><div class="eyebrow">CREATOR WORKSPACE</div><h1 id="page-title">Seu estúdio.</h1><p class="top-description" id="page-description">Organize suas ideias e transforme planos em conteúdo.</p></div><div class="status"><span class="status-dot"></span>Área privada</div></header>
+    <div class="account-bar"><span class="account-email" id="account-email">Conta conectada</span><button class="small-btn" id="sign-out" type="button">Sair da conta</button></div>
+    <div id="home-view">
+      <section class="welcome"><div class="eyebrow">SEU PRÓXIMO PROJETO COMEÇA AQUI</div><h2>Crie algo que vale a pena assistir.</h2><p>Seu ponto de partida para planejar vídeos, lives, cortes e publicações. Organize a criação e mantenha suas ideias em movimento.</p><button class="primary-btn" id="new-project" type="button">＋ Novo projeto</button></section>
+      <div class="section-heading"><h2>Visão geral</h2><span>Dados reais, sem estimativas inventadas</span></div>
+      <section class="stats">
+        <article class="stat-card"><div class="stat-top"><div class="stat-label">Projetos</div><div class="stat-icon">▧</div></div><div class="stat-value">—</div><div class="stat-note">Aguardando conexão com os dados</div></article>
+        <article class="stat-card"><div class="stat-top"><div class="stat-label">Ideias guardadas</div><div class="stat-icon">✳</div></div><div class="stat-value">—</div><div class="stat-note">Nenhuma contagem simulada</div></article>
+        <article class="stat-card"><div class="stat-top"><div class="stat-label">Publicações</div><div class="stat-icon">↗</div></div><div class="stat-value">—</div><div class="stat-note">Aguardando integração</div></article>
+      </section>
+      <div class="section-heading"><h2>Suas plataformas</h2><span>Conexões ainda não configuradas</span></div>
+      <section class="platforms">
+        <article class="platform-card"><div class="platform-top"><div class="platform-logo">▶</div></div><h3>YouTube Studio</h3><p>Vídeos, Shorts, lives e desempenho do canal.</p><span class="pill">○ Não conectado</span></article>
+        <article class="platform-card"><div class="platform-top"><div class="platform-logo">♪</div></div><h3>TikTok Studio</h3><p>Conteúdo curto e ferramentas da conta.</p><span class="pill">○ Não conectado</span></article>
+        <article class="platform-card"><div class="platform-top"><div class="platform-logo">◎</div></div><h3>Instagram</h3><p>Reels, publicações e visão da conta profissional.</p><span class="pill">○ Não conectado</span></article>
+        <article class="platform-card"><div class="platform-top"><div class="platform-logo">◉</div></div><h3>Twitch / Lives</h3><p>Prepare e organize sua rotina de transmissões.</p><span class="pill">○ Não conectado</span></article>
+      </section>
+      <div class="section-heading"><h2>Seu espaço de criação</h2><span>Organização do conteúdo</span></div>
+      <section class="workspace">
+        <article class="feature-card"><div class="feature-icon">✳</div><h3>Banco de ideias</h3><p>Reúna conceitos para vídeos, lives, cortes e séries.</p><button class="text-btn" data-section="Ideias">Explorar ideias →</button></article>
+        <article class="feature-card"><div class="feature-icon">▧</div><h3>Projetos</h3><p>Organize seus conteúdos do planejamento à publicação.</p><button class="text-btn" data-section="Projetos">Ver projetos →</button></article>
+        <article class="feature-card"><div class="feature-icon">◈</div><h3>Radar Gamer</h3><p>Área preparada para tendências e novidades do universo gamer.</p><button class="text-btn" data-section="Radar Gamer">Abrir radar →</button></article>
+        <article class="feature-card"><div class="feature-icon">▦</div><h3>Calendário editorial</h3><p>Planeje os conteúdos que pretende publicar.</p><button class="text-btn" data-section="Calendário">Ver calendário →</button></article>
+      </section>
     </div>
-    <header class="topbar">
-      <div>
-        <div class="eyebrow">CREATOR WORKSPACE</div>
-        <h1 id="page-title">Seu estúdio.</h1>
-        <p class="top-description" id="page-description">Organize suas ideias e transforme planos em conteúdo.</p>
-      </div>
-      <div class="status"><span class="status-dot"></span>Interface inicial</div>
-    </header>
-
-    <div class="account-bar">
-      <span class="account-email" id="account-email">Conta conectada</span>
-      <button class="small-btn" id="sign-out" type="button">Sair da conta</button>
-    </div>
-
-    <section class="welcome">
-      <div class="eyebrow">SEU PRÓXIMO PROJETO COMEÇA AQUI</div>
-      <h2>Crie algo que vale a pena assistir.</h2>
-      <p>Reúna ideias, organize projetos e prepare seus próximos vídeos, cortes e publicações sem perder o fio da criação.</p>
-      <button class="primary-btn" id="new-project" type="button" style="width:auto">+ Novo projeto</button>
-    </section>
-
-    <div class="section-heading"><h2>Visão geral</h2><span>Sem dados fictícios</span></div>
-    <section class="stats">
-      <article class="stat-card"><div class="stat-label">Projetos</div><div class="stat-value">—</div><div class="stat-note">Aguardando integração com o banco</div></article>
-      <article class="stat-card"><div class="stat-label">Ideias guardadas</div><div class="stat-value">—</div><div class="stat-note">Seus dados aparecerão aqui</div></article>
-      <article class="stat-card"><div class="stat-label">Publicações</div><div class="stat-value">—</div><div class="stat-note">Nenhuma métrica inventada</div></article>
-    </section>
-
-    <div class="section-heading"><h2>Seu espaço de criação</h2><span>Área de trabalho</span></div>
-    <section class="workspace">
-      <article class="feature-card"><div class="feature-icon">✳</div><h3>Banco de ideias</h3><p>Guarde conceitos para vídeos, lives, cortes e séries.</p><button class="text-btn" data-section="Ideias">Explorar ideias →</button></article>
-      <article class="feature-card"><div class="feature-icon">▧</div><h3>Projetos</h3><p>Organize seus conteúdos do planejamento até a publicação.</p><button class="text-btn" data-section="Projetos">Ver projetos →</button></article>
-      <article class="feature-card"><div class="feature-icon">◎</div><h3>Radar Gamer</h3><p>Prepare o espaço para acompanhar tendências e novidades de jogos.</p><button class="text-btn" data-section="Radar Gamer">Abrir radar →</button></article>
-      <article class="feature-card"><div class="feature-icon">▦</div><h3>Calendário editorial</h3><p>Planeje seus próximos conteúdos e mantenha a organização.</p><button class="text-btn" data-section="Calendário">Ver calendário →</button></article>
-    </section>
-    <div class="notice"><strong>Versão inicial do Suprema Studio.</strong> O login já usa o Supabase. Projetos, ideias, publicações e integrações ainda serão implementados. Nenhuma métrica fictícia é exibida.</div>
+    <section id="section-view" hidden></section>
+    <div class="notice"><strong>Transparência:</strong> esta interface não simula conexões, métricas ou publicações. As áreas que dependem de banco de dados, APIs ou permissões oficiais serão ativadas em etapas futuras.</div>
   </main>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/config.js"></script>
 <script src="/auth.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const authScreen = $("auth-screen");
-  const appScreen = $("app-screen");
-  const form = $("auth-form");
-  const emailInput = $("auth-email");
-  const passwordInput = $("auth-password");
-  const submit = $("auth-submit");
-  const message = $("auth-message");
-  let mode = "login";
-  let busy = false;
+  const authScreen = $("auth-screen"), appScreen = $("app-screen"), form = $("auth-form");
+  const emailInput = $("auth-email"), passwordInput = $("auth-password"), submit = $("auth-submit"), message = $("auth-message");
+  let mode = "login", busy = false;
 
-  function showMessage(text, type) {
-    message.textContent = text;
-    message.className = "message " + type;
-    message.hidden = false;
-  }
-
-  function clearMessage() {
-    message.textContent = "";
-    message.hidden = true;
-    message.className = "message";
-  }
-
+  function showMessage(text, type) { message.textContent = text; message.className = "message " + type; message.hidden = false; }
+  function clearMessage() { message.textContent = ""; message.hidden = true; message.className = "message"; }
   function setMode(nextMode) {
-    mode = nextMode;
-    const signup = mode === "signup";
+    mode = nextMode; const signup = mode === "signup";
     $("auth-title").textContent = signup ? "Crie sua conta." : "Entre no seu estúdio.";
-    $("auth-intro").textContent = signup
-      ? "Cadastre seu e-mail e crie uma senha para acessar seu espaço criativo."
-      : "Acesse sua conta para continuar organizando suas ideias e projetos.";
+    $("auth-intro").textContent = signup ? "Cadastre seu e-mail e crie uma senha para acessar seu espaço criativo." : "Acesse sua conta para continuar organizando suas ideias e projetos.";
     $("auth-submit").textContent = signup ? "Criar conta" : "Entrar";
     $("auth-switch-label").textContent = signup ? "Já tem uma conta?" : "Ainda não tem uma conta?";
     $("auth-switch").textContent = signup ? "Fazer login" : "Criar conta";
-    passwordInput.autocomplete = signup ? "new-password" : "current-password";
-    clearMessage();
+    passwordInput.autocomplete = signup ? "new-password" : "current-password"; clearMessage();
   }
+  function showApp(user) { authScreen.hidden = true; appScreen.hidden = false; $("account-email").textContent = user.email || "Conta conectada"; }
+  function showLogin() { appScreen.hidden = true; authScreen.hidden = false; passwordInput.value = ""; setMode("login"); }
 
-  function showApp(user) {
-    authScreen.hidden = true;
-    appScreen.hidden = false;
-    $("account-email").textContent = user.email || "Conta conectada";
-  }
-
-  function showLogin() {
-    appScreen.hidden = true;
-    authScreen.hidden = false;
-    passwordInput.value = "";
-    setMode("login");
-  }
-
-  $("auth-switch").addEventListener("click", () => {
-    setMode(mode === "login" ? "signup" : "login");
-  });
-
+  $("auth-switch").addEventListener("click", () => setMode(mode === "login" ? "signup" : "login"));
   form.addEventListener("submit", async event => {
-    event.preventDefault();
-    if (busy) return;
-
-    if (!window.SUPREMA_AUTH) {
-      showMessage("A autenticação não foi carregada. Confira config.js, auth.js e a conexão com o Supabase.", "error");
-      return;
-    }
-
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-
-    if (!email || !password) {
-      showMessage("Preencha o e-mail e a senha.", "error");
-      return;
-    }
-
-    busy = true;
-    submit.disabled = true;
-    submit.textContent = mode === "signup" ? "Criando conta..." : "Entrando...";
-    clearMessage();
-
+    event.preventDefault(); if (busy) return;
+    if (!window.SUPREMA_AUTH) { showMessage("A autenticação não foi carregada. Confira config.js, auth.js e a conexão com o Supabase.", "error"); return; }
+    const email = emailInput.value.trim(), password = passwordInput.value;
+    if (!email || !password) { showMessage("Preencha o e-mail e a senha.", "error"); return; }
+    busy = true; submit.disabled = true; submit.textContent = mode === "signup" ? "Criando conta..." : "Entrando..."; clearMessage();
     try {
       if (mode === "signup") {
         const result = await window.SUPREMA_AUTH.signUp(email, password);
         if (result.error) throw result.error;
-
-        if (result.data.session) {
-          showApp(result.data.user);
-        } else {
-          showMessage("Cadastro iniciado! Confira sua caixa de entrada e o spam para confirmar o e-mail antes de entrar.", "success");
-          setMode("login");
-          showMessage("Cadastro iniciado! Confirme seu e-mail pelo link enviado. Depois, volte aqui para entrar.", "success");
-        }
+        if (result.data.session) showApp(result.data.user);
+        else { setMode("login"); showMessage("Cadastro iniciado! Confirme seu e-mail pelo link enviado. Confira também a pasta de spam.", "success"); }
       } else {
         const result = await window.SUPREMA_AUTH.signIn(email, password);
         if (result.error) throw result.error;
         showApp(result.data.user);
       }
     } catch (error) {
-      const raw = String(error && error.message || "");
-      let friendly = "Não foi possível concluir. Confira os dados e tente novamente.";
+      const raw = String(error && error.message || ""); let friendly = "Não foi possível concluir. Confira os dados e tente novamente.";
       if (/invalid login credentials/i.test(raw)) friendly = "E-mail ou senha incorretos.";
       else if (/email not confirmed/i.test(raw)) friendly = "Confirme seu e-mail pelo link enviado antes de entrar.";
       else if (/user already registered/i.test(raw)) friendly = "Este e-mail já possui cadastro. Tente fazer login.";
@@ -297,79 +189,92 @@ main{padding:20px 16px 35px}
       else if (/rate limit/i.test(raw)) friendly = "Muitas tentativas em pouco tempo. Aguarde e tente novamente.";
       else if (/fetch|network/i.test(raw)) friendly = "Falha de conexão. Verifique a internet e tente novamente.";
       showMessage(friendly, "error");
-    } finally {
-      busy = false;
-      submit.disabled = false;
-      submit.textContent = mode === "signup" ? "Criar conta" : "Entrar";
-    }
+    } finally { busy = false; submit.disabled = false; submit.textContent = mode === "signup" ? "Criar conta" : "Entrar"; }
   });
 
   $("sign-out").addEventListener("click", async () => {
-    if (!window.SUPREMA_AUTH) return;
-    const button = $("sign-out");
-    button.disabled = true;
-    try {
-      const result = await window.SUPREMA_AUTH.signOut();
-      if (result.error) throw result.error;
-      showLogin();
-    } catch (_) {
-      alert("Não foi possível sair da conta. Tente novamente.");
-    } finally {
-      button.disabled = false;
-    }
+    if (!window.SUPREMA_AUTH) return; const button = $("sign-out"); button.disabled = true;
+    try { const result = await window.SUPREMA_AUTH.signOut(); if (result.error) throw result.error; showLogin(); }
+    catch (_) { alert("Não foi possível sair da conta. Tente novamente."); }
+    finally { button.disabled = false; }
   });
 
   const descriptions = {
-    "Início":"Organize suas ideias e transforme planos em conteúdo.",
-    "Projetos":"Organize seus projetos e acompanhe seu desenvolvimento.",
-    "Ideias":"Reúna conceitos para seus próximos conteúdos.",
-    "Calendário":"Planeje e organize suas publicações.",
-    "Conteúdo":"Prepare vídeos, lives, cortes e outros formatos.",
-    "Miniaturas":"Organize o trabalho visual dos seus conteúdos.",
-    "Radar Gamer":"Prepare sua central de tendências do universo gamer.",
-    "Publicações":"Organize os conteúdos que pretende publicar.",
-    "Análises":"Área reservada para métricas reais das suas contas.",
-    "Configurações":"Ajustes da sua área de trabalho."
+    "Início":"Seu ponto de partida para organizar a criação e acompanhar o que já estiver conectado.",
+    "Projetos":"Organize seus projetos e acompanhe as etapas de produção.",
+    "Ideias":"Reúna e desenvolva conceitos para os próximos conteúdos.",
+    "Calendário":"Planeje datas e mantenha uma visão editorial dos conteúdos.",
+    "YouTube Studio":"Área preparada para a gestão do canal e métricas autorizadas do YouTube.",
+    "TikTok Studio":"Área preparada para recursos disponíveis por meio das integrações oficiais do TikTok.",
+    "Instagram":"Área preparada para contas profissionais e recursos autorizados da Meta.",
+    "Twitch / Lives":"Organize transmissões, pautas, horários e materiais de live.",
+    "Radar Gamer":"Espaço para pesquisar assuntos e acompanhar tendências gamer com fontes verificáveis.",
+    "Palavras-chave":"Prepare pesquisas de termos, títulos e intenção de busca. Dados de volume exigem uma fonte conectada.",
+    "Assistente de criação":"Transforme um tema em ideias de vídeo, ganchos, estrutura e chamadas para ação.",
+    "Conteúdo":"Organize vídeos, Shorts, cortes, Reels e transmissões em produção.",
+    "Miniaturas":"Planeje conceitos visuais, textos e referências para thumbnails.",
+    "Publicações":"Acompanhe o planejamento das publicações; envio automático depende de integração e permissões.",
+    "Análises":"Exiba métricas somente depois de conectar fontes de dados reais.",
+    "Configurações":"Preferências da sua área de trabalho e futuras conexões de plataformas."
   };
-
-  function openSection(section) {
-    document.querySelectorAll(".nav-item").forEach(item => {
-      item.classList.toggle("active", item.dataset.section === section);
+  const platformSections = ["YouTube Studio","TikTok Studio","Instagram","Twitch / Lives"];
+  const sectionCopy = {
+    "Projetos":["Organize um conteúdo desde a ideia até a publicação.","Planejamento","Defina objetivo, formato, jogo, plataforma e prazo.","Produção","Registre roteiro, gravação, edição e revisão."],
+    "Ideias":["Capture ideias sem perder o contexto e transforme as melhores em projetos.","Banco de ideias","A próxima etapa conectará este espaço à tabela de ideias do seu banco.","Como organizar","Anote o tema, o gancho inicial, o formato e para quem o conteúdo é feito."],
+    "Calendário":["Uma visão editorial para decidir o que produzir e quando publicar.","Planejamento editorial","O calendário será conectado às publicações e datas salvas.","Próxima etapa","As datas e os estados serão carregados do banco, sem eventos inventados."],
+    "YouTube Studio":["Painel dedicado ao YouTube, separado das demais plataformas.","Conteúdo do canal","Vídeos, Shorts e transmissões só aparecerão depois da autorização da conta.","Métricas do YouTube","Visualizações, retenção e outros dados dependem das permissões e da API oficial."],
+    "TikTok Studio":["Área específica para os recursos que a integração oficial permitir.","Conta e conteúdo","A disponibilidade de leitura e publicação depende das APIs, do tipo de conta e das aprovações.","Estado da conexão","Nenhuma conta está conectada por esta tela."],
+    "Instagram":["Espaço para conteúdo e informações de contas elegíveis do Instagram.","Reels e publicações","Os recursos dependem de conta profissional, permissões e APIs da Meta.","Estado da conexão","Nenhuma conta está conectada por esta tela."],
+    "Twitch / Lives":["Prepare transmissões e mantenha pautas, horários e materiais organizados.","Planejamento de lives","Organização editorial pode ser criada antes da conexão da conta.","Dados da transmissão","Dados ao vivo dependem da integração oficial da Twitch."],
+    "Radar Gamer":["Central de pesquisa para encontrar assuntos interessantes sem inventar números de tendência.","Radar de assuntos","Fontes, datas e links deverão acompanhar os resultados quando a pesquisa for conectada.","Critério de qualidade","Priorize relevância para seu público, momento do jogo e possibilidade de produzir um bom conteúdo."],
+    "Palavras-chave":["Estruture pesquisas e ideias de SEO. Volume e dificuldade não serão estimados sem fonte real.","Pesquisa de termos","A pesquisa de volume e concorrência exige uma fonte de dados conectada.","Sugestões de conteúdo","Compare o termo, a intenção de busca e o formato que melhor responde à dúvida."],
+    "Assistente de criação":["Desenvolva ideias e estruturas de conteúdo a partir de um tema informado.","Briefing do conteúdo","Informe tema, jogo, plataforma e estilo para preparar um briefing.","Fluxo de trabalho","A geração automática será conectada numa etapa própria; esta tela não finge ter gerado resultados."],
+    "Conteúdo":["Organize o material em produção, da gravação à revisão final.","Etapas sugeridas","Ideia → roteiro → gravação → edição → revisão → publicado.","Biblioteca de conteúdo","A lista real será conectada ao banco de dados."],
+    "Miniaturas":["Planeje a mensagem visual de cada vídeo antes de produzir a thumbnail.","Conceito visual","Defina personagem ou assunto principal, emoção, contraste e texto curto.","Biblioteca de miniaturas","Arquivos e referências serão adicionados quando a função de mídia for implementada."],
+    "Publicações":["Central para planejar e acompanhar conteúdos preparados para cada plataforma.","Fila de publicação","Os estados serão reais quando a área estiver conectada ao banco.","Publicação automática","Enviar conteúdo diretamente exige integração oficial, permissões e, em alguns casos, revisão da plataforma."],
+    "Análises":["Um painel para métricas confiáveis, com fonte e período identificados.","Métricas da conta","Ainda não há contas de plataforma conectadas para exibir estatísticas.","Transparência dos dados","Nenhum número de visualizações, alcance ou crescimento é fabricado."],
+    "Configurações":["Gerencie a área de trabalho e prepare futuras conexões de contas.","Conta","A sessão atual é gerenciada pelo Supabase.","Conexões","As conexões de plataforma serão configuradas individualmente com autorização oficial."]
+  };
+  function makePanel(title, body, heading1, copy1, heading2, copy2) {
+    const section = $("section-view"); section.replaceChildren();
+    const panel = document.createElement("div"); panel.className = "page-panel";
+    const h2 = document.createElement("h2"); h2.textContent = title; panel.appendChild(h2);
+    const p = document.createElement("p"); p.textContent = body; panel.appendChild(p);
+    const grid = document.createElement("div"); grid.className = "panel-grid";
+    [[heading1,copy1],[heading2,copy2]].forEach(pair => {
+      const card = document.createElement("article"); card.className = "mini-panel";
+      const h3 = document.createElement("h3"); h3.textContent = pair[0];
+      const text = document.createElement("p"); text.textContent = pair[1];
+      card.append(h3,text); grid.appendChild(card);
     });
+    panel.appendChild(grid);
+    const actions = document.createElement("div"); actions.className = "page-actions";
+    const back = document.createElement("button"); back.className = "secondary-btn"; back.type = "button"; back.textContent = "← Voltar ao início";
+    back.addEventListener("click", () => openSection("Início")); actions.appendChild(back);
+    panel.appendChild(actions); section.appendChild(panel);
+  }
+  function openSection(section) {
+    document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.section === section));
     $("page-title").textContent = section === "Início" ? "Seu estúdio." : section + ".";
     $("page-description").textContent = descriptions[section] || "Sua área de trabalho.";
-    if (section !== "Início") alert(section + ": esta área ainda será implementada.");
+    const isHome = section === "Início"; $("home-view").hidden = !isHome; $("section-view").hidden = isHome;
+    if (!isHome) {
+      const copy = sectionCopy[section] || ["Área de trabalho para esta parte do estúdio.","Estado atual","Esta área visual está preparada, mas ainda não foi conectada a dados ou serviços externos.","Próximos passos","A funcionalidade será implementada em uma etapa própria."];
+      makePanel(section, descriptions[section] || "Sua área de trabalho.", copy[1], copy[2], copy[3], copy[4]);
+    }
+    if (window.matchMedia("(max-width: 760px)").matches) window.scrollTo({top:0,behavior:"smooth"});
   }
-
-  document.querySelectorAll("[data-section]").forEach(item => {
-    item.addEventListener("click", () => openSection(item.dataset.section));
-  });
-
-  $("new-project").addEventListener("click", () => {
-    alert("A criação de projetos será conectada ao banco na próxima etapa.");
-  });
+  document.querySelectorAll("[data-section]").forEach(item => item.addEventListener("click", () => openSection(item.dataset.section)));
+  $("new-project").addEventListener("click", () => openSection("Projetos"));
 
   async function initialize() {
-    if (!window.SUPREMA_AUTH) {
-      showMessage("Não foi possível carregar a autenticação. Verifique se config.js contém sua chave publicável e se os scripts estão carregando.", "error");
-      return;
-    }
-
+    if (!window.SUPREMA_AUTH) { showMessage("Não foi possível carregar a autenticação. Verifique se config.js e auth.js estão disponíveis.", "error"); return; }
     try {
-      const result = await window.SUPREMA_AUTH.getSession();
-      if (result.error) throw result.error;
-      if (result.data.session) showApp(result.data.session.user);
-      else showLogin();
-
-      window.SUPREMA_AUTH.onAuthStateChange((event, session) => {
-        if (session) showApp(session.user);
-        else showLogin();
-      });
-    } catch (_) {
-      showMessage("Falha ao verificar sua sessão. Atualize a página e tente novamente.", "error");
-    }
+      const result = await window.SUPREMA_AUTH.getSession(); if (result.error) throw result.error;
+      if (result.data.session) showApp(result.data.session.user); else showLogin();
+      window.SUPREMA_AUTH.onAuthStateChange((event, session) => { if (session) showApp(session.user); else showLogin(); });
+    } catch (_) { showMessage("Falha ao verificar sua sessão. Atualize a página e tente novamente.", "error"); }
   }
-
   initialize();
 })();
 </script>
