@@ -23,11 +23,15 @@
 
   window.SUPREMA_AUTH = {
     async signUp(email, password) {
-      return await client.auth.signUp({
-        email,
-        password
-      });
-    },
+  return await client.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo:
+        window.location.origin + "/verificacao.html"
+    }
+  });
+},
 
     async signIn(email, password) {
       return await client.auth.signInWithPassword({
