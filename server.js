@@ -8,7 +8,7 @@ const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser());
 
 let supabase = null;
@@ -65,7 +65,7 @@ app.get("/health/db", async (req, res) => {
       status: "online",
       databaseConnected: true
     });
-  } catch {
+  } catch (error) {
     return res.status(503).json({
       status: "error",
       databaseConnected: false
@@ -73,7 +73,10 @@ app.get("/health/db", async (req, res) => {
   }
 });
 
-// Configuração do YouTube
+// --------------------------------------------------
+// CONFIGURAÇÃO DO YOUTUBE
+// --------------------------------------------------
+
 function getYouTubeConfig() {
   const {
     YOUTUBE_CLIENT_ID,
@@ -104,7 +107,29 @@ const YOUTUBE_SCOPES = [
   "https://www.googleapis.com/auth/yt-analytics.readonly"
 ];
 
-// Assinatura do estado OAuth contra adulteração
+// --------------------------------------------------
+// AUTENTICAÇÃO DO USUÁRIO SUPABASE
+// --------------------------------------------------
+
+async function getAuthenticatedUser(req) {
+  if (!supabase) return null;
+
+  const authorization = req.get("authorization") || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+
+  if (!match) return null;
+
+  const { data, error } = await supabase.auth.getUser(match[1]);
+
+  if (error || !data?.user?.id) return null;
+
+  return data.user;
+}
+
+// --------------------------------------------------
+// ESTADO ASSINADO DO OAUTH
+// --------------------------------------------------
+
 function createSignedState(secret, payload) {
   const encoded = Buffer
     .from(JSON.stringify(payload))
@@ -167,7 +192,10 @@ function verifySignedState(secret, value) {
   }
 }
 
-// Chave de 32 bytes em Base64 para AES-256-GCM
+// --------------------------------------------------
+// CRIPTOGRAFIA DOS TOKENS
+// --------------------------------------------------
+
 function getEncryptionKey() {
   const value = process.env.YOUTUBE_TOKEN_ENCRYPTION_KEY;
   if (!value) return null;
@@ -205,15 +233,56 @@ function encryptToken(value) {
     cipher.final()
   ]);
 
-  const tag = cipher.getAuthTag();
-
   return [
     "v1",
     iv.toString("base64url"),
-    tag.toString("base64url"),
+    cipher.getAuthTag().toString("base64url"),
     encrypted.toString("base64url")
   ].join(":");
 }
+
+function decryptToken(value) {
+  if (typeof value !== "string" || !value) return null;
+
+  const key = getEncryptionKey();
+
+  if (!key) {
+    throw new Error("Chave de criptografia ausente ou inválida.");
+  }
+
+  const parts = value.split(":");
+
+  if (parts.length !== 4 || parts[0] !== "v1") {
+    throw new Error("Formato de token criptografado inválido.");
+  }
+
+  const iv = Buffer.from(parts[1], "base64url");
+  const tag = Buffer.from(parts[2], "base64url");
+  const encrypted = Buffer.from(parts[3], "base64url");
+
+  if (iv.length !== 12 || tag.length !== 16) {
+    throw new Error("Dados criptografados inválidos.");
+  }
+
+  const decipher = crypto.createDecipheriv(
+    "aes-256-gcm",
+    key,
+    iv
+  );
+
+  decipher.setAuthTag(tag);
+
+  const decrypted = Buffer.concat([
+    decipher.update(encrypted),
+    decipher.final()
+  ]);
+
+  return decrypted.toString("utf8");
+}
+
+// --------------------------------------------------
+// UTILITÁRIOS
+// --------------------------------------------------
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, character => ({
@@ -244,7 +313,209 @@ a{display:inline-block;margin-top:12px;color:#fff;background:#d92735;padding:12p
 </html>`;
 }
 
-// Início OAuth: exige uma sessão Supabase válida
+// --------------------------------------------------
+// RENOVAÇÃO DO ACCESS TOKEN
+// --------------------------------------------------
+
+async function refreshYouTubeAccessToken(accountId) {
+  if (!supabase) {
+    throw new Error("Supabase não configurado.");
+  }
+
+  const config = getYouTubeConfig();
+
+  if (!config || !getEncryptionKey()) {
+    throw new Error("Configuração do YouTube incompleta.");
+  }
+
+  const { data: saved, error: savedError } = await supabase
+    .from("social_tokens")
+    .select("refresh_token_enc")
+    .eq("account_id", accountId)
+    .maybeSingle();
+
+  if (savedError) throw savedError;
+
+  if (!saved?.refresh_token_enc) {
+    const error = new Error("Não existe refresh token salvo.");
+    error.code = "NO_REFRESH_TOKEN";
+    throw error;
+  }
+
+  const refreshToken = decryptToken(saved.refresh_token_enc);
+
+  const response = await fetch(
+    "https://oauth2.googleapis.com/token",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token"
+      })
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok || !result.access_token) {
+    const error = new Error("O Google não renovou o token.");
+    error.code = result.error || "REFRESH_FAILED";
+    throw error;
+  }
+
+  const expiresAt = new Date(
+    Date.now() + (Number(result.expires_in) || 3600) * 1000
+  ).toISOString();
+
+  const tokenPayload = {
+    account_id: accountId,
+    access_token_enc: encryptToken(result.access_token),
+    refresh_token_enc: saved.refresh_token_enc,
+    expires_at: expiresAt
+  };
+
+  const { error: updateError } = await supabase
+    .from("social_tokens")
+    .upsert(tokenPayload, {
+      onConflict: "account_id"
+    });
+
+  if (updateError) throw updateError;
+
+  return {
+    accessToken: result.access_token,
+    expiresAt
+  };
+}
+
+// --------------------------------------------------
+// STATUS PERSISTENTE DO YOUTUBE
+// --------------------------------------------------
+
+app.get("/api/youtube/status", async (req, res) => {
+  try {
+    const user = await getAuthenticatedUser(req);
+
+    if (!user) {
+      return res.status(401).json({
+        error: "Sessão inválida. Entre novamente no Suprema Studio."
+      });
+    }
+
+    const { data: account, error: accountError } = await supabase
+      .from("social_accounts")
+      .select("id, display_name, external_id, status, last_sync_at")
+      .eq("user_id", user.id)
+      .eq("platform", "youtube")
+      .order("last_sync_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (accountError) {
+      console.error("Falha ao consultar conta YouTube:", accountError.message);
+      return res.status(500).json({
+        error: "Não foi possível consultar a conexão do YouTube."
+      });
+    }
+
+    if (!account) {
+      return res.json({ connected: false });
+    }
+
+    if (account.status !== "connected") {
+      return res.json({
+        connected: false,
+        needsReconnect: true,
+        channelName: account.display_name
+      });
+    }
+
+    const { data: tokenRecord, error: tokenError } = await supabase
+      .from("social_tokens")
+      .select("expires_at, refresh_token_enc, access_token_enc")
+      .eq("account_id", account.id)
+      .maybeSingle();
+
+    if (tokenError) {
+      console.error("Falha ao consultar tokens YouTube:", tokenError.message);
+      return res.status(500).json({
+        error: "Não foi possível verificar a autorização do YouTube."
+      });
+    }
+
+    if (!tokenRecord?.refresh_token_enc || !tokenRecord?.access_token_enc) {
+      return res.json({
+        connected: false,
+        needsReconnect: true,
+        channelName: account.display_name
+      });
+    }
+
+    const expiration = tokenRecord.expires_at
+      ? new Date(tokenRecord.expires_at).getTime()
+      : 0;
+
+    // Renova quando faltarem menos de 60 segundos para expirar.
+    if (!Number.isFinite(expiration) || expiration <= Date.now() + 60000) {
+      try {
+        await refreshYouTubeAccessToken(account.id);
+      } catch (error) {
+        console.error(
+          "Falha ao renovar token YouTube:",
+          error.code || error.message
+        );
+
+        if (
+          error.code === "invalid_grant" ||
+          error.code === "NO_REFRESH_TOKEN"
+        ) {
+          await supabase
+            .from("social_accounts")
+            .update({ status: "reconnect_required" })
+            .eq("id", account.id)
+            .eq("user_id", user.id);
+
+          return res.json({
+            connected: false,
+            needsReconnect: true,
+            channelName: account.display_name
+          });
+        }
+
+        // Erros temporários não significam necessariamente
+        // que o usuário precisa autorizar novamente.
+        return res.status(503).json({
+          error: "Não foi possível renovar o acesso ao YouTube agora.",
+          retryable: true
+        });
+      }
+    }
+
+    return res.json({
+      connected: true,
+      channelName: account.display_name,
+      channelId: account.external_id,
+      status: "connected",
+      lastSyncAt: account.last_sync_at
+    });
+  } catch (error) {
+    console.error("Erro no status YouTube:", error.message);
+
+    return res.status(500).json({
+      error: "Erro interno ao verificar o YouTube."
+    });
+  }
+});
+
+// --------------------------------------------------
+// INÍCIO DO OAUTH
+// --------------------------------------------------
+
 app.post("/auth/youtube/start", async (req, res) => {
   if (!supabase) {
     return res.status(503).json({
@@ -260,26 +531,17 @@ app.post("/auth/youtube/start", async (req, res) => {
     });
   }
 
-  const authorization = req.get("authorization") || "";
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
-
-  if (!match) {
-    return res.status(401).json({
-      error: "Entre na sua conta do Suprema Studio novamente."
-    });
-  }
-
   try {
-    const { data, error } = await supabase.auth.getUser(match[1]);
+    const user = await getAuthenticatedUser(req);
 
-    if (error || !data?.user?.id) {
+    if (!user) {
       return res.status(401).json({
-        error: "Sua sessão expirou. Entre novamente."
+        error: "Entre na sua conta do Suprema Studio novamente."
       });
     }
 
     const state = createSignedState(config.stateSecret, {
-      userId: data.user.id,
+      userId: user.id,
       nonce: crypto.randomBytes(32).toString("hex"),
       createdAt: Date.now()
     });
@@ -322,7 +584,10 @@ app.get("/auth/youtube", (req, res) => {
   );
 });
 
-// Retorno do Google: valida estado, consulta canal e persiste a conexão
+// --------------------------------------------------
+// RETORNO DO GOOGLE E PERSISTÊNCIA DA CONTA
+// --------------------------------------------------
+
 app.get("/auth/youtube/callback", async (req, res) => {
   const config = getYouTubeConfig();
 
@@ -339,7 +604,10 @@ app.get("/auth/youtube/callback", async (req, res) => {
     clearStateCookie();
 
     return res.status(503).send(
-      resultPage("Configuração incompleta", "A integração ainda não está pronta no servidor.")
+      resultPage(
+        "Configuração incompleta",
+        "A integração ainda não está pronta no servidor."
+      )
     );
   }
 
@@ -363,7 +631,10 @@ app.get("/auth/youtube/callback", async (req, res) => {
     clearStateCookie();
 
     return res.status(400).send(
-      resultPage("Solicitação inválida", "Volte ao Suprema Studio e tente conectar novamente.")
+      resultPage(
+        "Solicitação inválida",
+        "Volte ao Suprema Studio e tente conectar novamente."
+      )
     );
   }
 
@@ -371,7 +642,10 @@ app.get("/auth/youtube/callback", async (req, res) => {
 
   if (req.query.error) {
     return res.status(400).send(
-      resultPage("Conexão cancelada", "A autorização do YouTube foi cancelada ou recusada.")
+      resultPage(
+        "Conexão cancelada",
+        "A autorização do YouTube foi cancelada ou recusada."
+      )
     );
   }
 
@@ -399,19 +673,16 @@ app.get("/auth/youtube/callback", async (req, res) => {
       }
     );
 
-    if (!tokenResponse.ok) {
+    const tokens = await tokenResponse.json();
+
+    if (!tokenResponse.ok || !tokens.access_token) {
       console.error("Falha na troca OAuth. HTTP:", tokenResponse.status);
 
       return res.status(502).send(
-        resultPage("Falha na autorização", "Não foi possível concluir a autorização com o Google.")
-      );
-    }
-
-    const tokens = await tokenResponse.json();
-
-    if (!tokens.access_token) {
-      return res.status(502).send(
-        resultPage("Token ausente", "O Google não forneceu um token de acesso.")
+        resultPage(
+          "Falha na autorização",
+          "Não foi possível concluir a autorização com o Google."
+        )
       );
     }
 
@@ -428,7 +699,10 @@ app.get("/auth/youtube/callback", async (req, res) => {
       console.error("Falha ao consultar canal. HTTP:", channelResponse.status);
 
       return res.status(502).send(
-        resultPage("Canal não consultado", "A autorização foi recebida, mas não foi possível consultar o canal.")
+        resultPage(
+          "Canal não consultado",
+          "A autorização foi recebida, mas não foi possível consultar o canal."
+        )
       );
     }
 
@@ -437,12 +711,13 @@ app.get("/auth/youtube/callback", async (req, res) => {
 
     if (!channel?.id) {
       return res.status(404).send(
-        resultPage("Canal não encontrado", "Nenhum canal foi encontrado na conta autorizada.")
+        resultPage(
+          "Canal não encontrado",
+          "Nenhum canal foi encontrado na conta autorizada."
+        )
       );
     }
 
-    // A identidade do usuário vem do estado assinado pelo servidor,
-    // nunca de um user_id enviado pelo navegador.
     const accountPayload = {
       user_id: savedState.userId,
       platform: "youtube",
@@ -470,11 +745,13 @@ app.get("/auth/youtube/callback", async (req, res) => {
       );
 
       return res.status(500).send(
-        resultPage("Falha ao salvar conta", "O canal foi autorizado, mas não foi possível salvar a conta. Tente novamente.")
+        resultPage(
+          "Falha ao salvar conta",
+          "O canal foi autorizado, mas não foi possível salvar a conta."
+        )
       );
     }
 
-    // Se o Google não enviar um novo refresh_token, preservar o anterior.
     const { data: previousTokens, error: previousError } = await supabase
       .from("social_tokens")
       .select("refresh_token_enc")
@@ -485,13 +762,25 @@ app.get("/auth/youtube/callback", async (req, res) => {
       console.error("Falha ao consultar tokens anteriores:", previousError.message);
 
       return res.status(500).send(
-        resultPage("Falha ao salvar tokens", "Não foi possível consultar a conexão existente.")
+        resultPage(
+          "Falha ao salvar tokens",
+          "Não foi possível consultar a conexão existente."
+        )
       );
     }
 
     const refreshTokenEnc = tokens.refresh_token
       ? encryptToken(tokens.refresh_token)
       : (previousTokens?.refresh_token_enc || null);
+
+    if (!refreshTokenEnc) {
+      return res.status(502).send(
+        resultPage(
+          "Autorização incompleta",
+          "O Google não forneceu um refresh token. Tente conectar novamente."
+        )
+      );
+    }
 
     const tokenPayload = {
       account_id: account.id,
@@ -512,7 +801,10 @@ app.get("/auth/youtube/callback", async (req, res) => {
       console.error("Falha ao salvar tokens:", tokenError.message);
 
       return res.status(500).send(
-        resultPage("Falha ao salvar tokens", "A conta foi identificada, mas não foi possível concluir o armazenamento seguro dos tokens.")
+        resultPage(
+          "Falha ao salvar tokens",
+          "A conta foi identificada, mas não foi possível concluir o armazenamento seguro dos tokens."
+        )
       );
     }
 
@@ -526,10 +818,17 @@ app.get("/auth/youtube/callback", async (req, res) => {
     console.error("Erro interno no OAuth do YouTube:", error.message);
 
     return res.status(500).send(
-      resultPage("Erro na conexão", "Ocorreu um erro interno. Tente novamente mais tarde.")
+      resultPage(
+        "Erro na conexão",
+        "Ocorreu um erro interno. Tente novamente mais tarde."
+      )
     );
   }
 });
+
+// --------------------------------------------------
+// INICIALIZAÇÃO
+// --------------------------------------------------
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor iniciado na porta ${PORT}`);
