@@ -163,8 +163,30 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
     }
     $('content-panel').innerHTML='<div class="section-heading"><h2>'+cfg.title+'</h2><span>'+items.length+' registro(s)</span></div><p class="section-intro">'+cfg.desc+'</p>'+(tab==='projetos'||tab==='ideias'?formMarkup(cfg.kind,cfg.fields,'Salvar'):'')+(tab==='projetos'||tab==='ideias'?itemCards(items,cfg.kind):listMarkup(items));if(tab==='projetos'||tab==='ideias'){bindImagePreview();const f=$('record-form');f.onsubmit=async event=>{event.preventDefault();const fd=new FormData(f);try{const image=await fileToDataUrl(fd.get('imageFile'));const item={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),kind:cfg.kind,title:String(fd.get('title')||'').trim(),body:String(fd.get('body')||'').trim(),platform:String(fd.get('platform')||''),status:String(fd.get('status')||''),date:String(fd.get('date')||''),image};if(!item.title){alert('Preencha o título.');return}data[cfg.kind].push(item);if(saveData())renderContentTab(tab)}catch(err){alert(err.message)}};document.querySelectorAll('[data-open-record]').forEach(card=>{const act=e=>{if(e.target.closest('button'))return;openRecord(card.dataset.recordKind,card.dataset.openRecord,tab)};card.onclick=act;card.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button')){e.preventDefault();act(e)}}});document.querySelectorAll('[data-edit-record]').forEach(b=>b.onclick=()=>openRecord(b.dataset.kind,b.dataset.editRecord,tab));document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{if(!confirm('Excluir este registro deste navegador?'))return;data[b.dataset.kind]=data[b.dataset.kind].filter(x=>String(x.id)!==b.dataset.delete);data.calendario.forEach(e=>{if(e.linkedKind===b.dataset.kind&&String(e.linkedId)===b.dataset.delete){delete e.linkedKind;delete e.linkedId}});saveData();renderContentTab(tab)})}else{document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{if(!confirm('Excluir este registro deste navegador?'))return;data[cfg.kind]=data[cfg.kind].filter(x=>String(x.id)!==b.dataset.delete);saveData();renderContentTab(tab)})}}
   document.querySelectorAll("[data-content-tab]").forEach(button=>button.addEventListener("click",()=>renderContentTab(button.dataset.contentTab)));
-  document.querySelectorAll("[data-platform]").forEach(button=>button.addEventListener("click",()=>{
-    const name=button.dataset.platform,detail=$("platform-detail");
+  document.querySelectorAll("[data-platform]").forEach(button=>button.addEventListener("click",async event=>{
+    const name=button.dataset.platform;
+    if(name==="YouTube"){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if(button.disabled)return;
+      const originalText=button.textContent;
+      button.disabled=true;
+      button.textContent="Conectando ao YouTube...";
+      try{
+        if(!window.SUPREMA_AUTH)throw new Error("A autenticação não foi carregada. Atualize a página.");
+        const {data:sessionData,error:sessionError}=await window.SUPREMA_AUTH.getSession();
+        if(sessionError||!sessionData?.session?.access_token)throw new Error("Sua sessão expirou. Entre novamente no Suprema Studio.");
+        const response=await fetch("/auth/youtube/start",{method:"POST",headers:{Authorization:`Bearer ${sessionData.session.access_token}`,"Content-Type":"application/json"}});
+        let result;
+        try{result=await response.json()}catch(_){throw new Error("O servidor retornou uma resposta inválida.")}
+        if(!response.ok||!result.url)throw new Error(result.error||"Não foi possível iniciar a conexão com o YouTube.");
+        const destination=new URL(result.url);
+        if(destination.protocol!=="https:"||destination.hostname!=="accounts.google.com")throw new Error("O endereço de autorização retornado não é válido.");
+        window.location.assign(destination.href);
+      }catch(error){alert(error.message||"Erro ao conectar com o YouTube.");button.disabled=false;button.textContent=originalText}
+      return;
+    }
+    const detail=$("platform-detail");
     const matchesPlatform=value=>{const v=String(value||'').toLowerCase();return v.includes(name.toLowerCase())||(name==='YouTube'&&v.includes('shorts'))||(name==='Instagram'&&v.includes('reels'))||(name==='Twitch'&&v.includes('live'))};
     const planned=data.calendario.filter(x=>matchesPlatform(x.platform)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
     const published=data.publicacoes.filter(x=>matchesPlatform(x.platform));
