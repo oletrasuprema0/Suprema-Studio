@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101010">
+  <title>Verificação de e-mail | Suprema Studio</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background:
+        radial-gradient(ellipse at 50% 0%, #32191d 0%, transparent 55%),
+        #101010;
+      color: #f5f5f5;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      padding: 34px 25px;
+      text-align: center;
+      background: #181818;
+      border: 1px solid #343030;
+      border-radius: 22px;
+      box-shadow: 0 24px 80px #0005;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 38px;
+      font-size: 14px;
+      font-weight: 850;
+      letter-spacing: .5px;
+    }
+
+    .brand-icon {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      background: #e63946;
+      font-size: 20px;
+    }
+
+    .check {
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 23px;
+      color: #8ce5a5;
+      background: #193022;
+      border: 1px solid #315b3e;
+      border-radius: 50%;
+      font-size: 38px;
+    }
+
+    .eyebrow {
+      color: #ff777e;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+
+    h1 {
+      margin: 12px 0;
+      font-size: 27px;
+      letter-spacing: -.8px;
+    }
+
+    p {
+      margin: 0 auto 25px;
+      color: #aaa;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .button {
+      display: block;
+      width: 100%;
+      padding: 14px 16px;
+      margin-top: 11px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: #e63946;
+      color: white;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .secondary {
+      color: #ddd;
+      background: #222;
+      border-color: #383838;
+    }
+
+    .foot {
+      margin-top: 25px;
+      color: #666;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <span class="brand-icon">S</span>
+      SUPREMA STUDIO
+    </div>
+
+    <div class="check" aria-hidden="true">✓</div>
+
+    <div class="eyebrow">CONTA SUPREMA STUDIO</div>
+    <h1 id="title">Verificando seu e-mail...</h1>
+    <p id="description">
+      Estamos conferindo sua confirmação. Aguarde um instante.
+    </p>
+
+    <a class="button" id="return-link" href="/">Voltar ao Suprema Studio</a>
+    <button class="button secondary" id="close-button" type="button">
+      Pode fechar esta página
+    </button>
+
+    <div class="foot">Seu espaço criativo. Suas próximas ideias.</div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/config.js"></script>
+  <script>
+    (async function () {
+      const title = document.getElementById("title");
+      const description = document.getElementById("description");
+      const returnLink = document.getElementById("return-link");
+      const closeButton = document.getElementById("close-button");
+
+      returnLink.href = window.location.origin + "/";
+
+      closeButton.addEventListener("click", function () {
+        window.close();
+        description.textContent =
+          "Se o navegador não fechar esta aba, você pode fechá-la manualmente.";
+      });
+
+      function showSuccess() {
+        title.textContent = "E-mail verificado!";
+        description.textContent =
+          "Sua confirmação foi concluída. Agora você pode voltar ao Suprema Studio e acessar sua conta.";
+      }
+
+      function showPending() {
+        document.querySelector(".check").textContent = "!";
+        document.querySelector(".check").style.color = "#ffcc80";
+        document.querySelector(".check").style.background = "#332819";
+        title.textContent = "Confira sua confirmação";
+        description.textContent =
+          "Não conseguimos confirmar o resultado automaticamente. Tente entrar no Suprema Studio. Se houver erro, abra novamente o link do e-mail ou solicite outro.";
+      }
+
+      try {
+        const config = window.SUPREMA_CONFIG;
+
+        if (!config || !config.supabaseUrl ||
+            !config.supabasePublishableKey || !window.supabase) {
+          showPending();
+          return;
+        }
+
+        const client = window.supabase.createClient(
+          config.supabaseUrl,
+          config.supabasePublishableKey
+        );
+
+        let finished = false;
+
+        client.auth.onAuthStateChange(function (event, session) {
+          if (event === "SIGNED_IN" && session) {
+            finished = true;
+            showSuccess();
+          }
+        });
+
+        const result = await client.auth.getSession();
+
+        if (result.data && result.data.session) {
+          finished = true;
+          showSuccess();
+        }
+
+        if (!finished) {
+          window.setTimeout(function () {
+            if (!finished) showPending();
+          }, 1800);
+        }
+      } catch (_) {
+        showPending();
+      }
+    })();
+  </script>
+</body>
+</html>
