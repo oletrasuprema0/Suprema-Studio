@@ -180,6 +180,24 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
     const scriptItems=localScripts.length?localScripts.map(x=>'<div class="yt-list-item"><div class="yt-video-thumb">▤</div><div class="yt-list-copy"><strong>'+escapeHtml(x.title)+'</strong><small>Roteiro salvo neste navegador</small></div></div>').join(''):'<div class="yt-empty-data"><strong>Nenhum roteiro do YouTube salvo</strong>Crie um briefing na área de roteiros para organizar o próximo vídeo.</div>';
     return '<div class="yt-studio"><header class="yt-studio-top"><div class="yt-studio-title"><div class="yt-logo">▶</div><div><h2>Painel do canal</h2><p>'+channel+'</p></div></div><div class="yt-actions"><span class="yt-channel-pill">Conectado</span><button class="small-btn" id="studio-close" type="button">Voltar</button></div></header><div class="yt-quick-actions"><button class="yt-quick-action" id="yt-plan">＋ Planejar</button><button class="yt-quick-action" id="yt-live">◉ Preparar live</button><button class="yt-quick-action" id="yt-scripts">▤ Roteiros</button></div><div class="yt-dashboard-grid"><section class="yt-module"><div class="yt-module-head"><h3>Desempenho do Shorts mais recente</h3><span>Analytics</span></div><div class="yt-short-preview"><div class="yt-short-thumb">▶</div><div><h4>Dados do vídeo</h4><p>As visualizações, curtidas, comentários e retenção serão mostrados aqui quando a API de Analytics estiver habilitada.</p></div></div><div class="yt-metric-row"><div class="yt-metric"><span>Visualizações</span><strong>—</strong></div><div class="yt-metric"><span>Comentários</span><strong>—</strong></div><div class="yt-metric"><span>Gostei</span><strong>—</strong></div></div><div class="yt-empty-data" style="margin-top:12px">Ainda não há métricas importadas. Não exibimos números fictícios.</div></section><section class="yt-module"><div class="yt-module-head"><h3>Comentários</h3><span>Canal</span></div><div class="yt-empty-data"><strong>Comentários ainda não carregados</strong>A leitura de comentários depende das permissões e da integração da YouTube Data API.</div><button class="small-btn" id="yt-comments" type="button" style="margin-top:12px">Ver requisitos da integração</button></section><section class="yt-module"><div class="yt-module-head"><h3>Inscritos recentes</h3><span>Canal</span></div><div class="yt-empty-data"><strong>Lista indisponível por enquanto</strong>O YouTube não fornece todos os dados individuais de inscritos. Quando houver dados autorizados, eles serão exibidos conforme as permissões da API.</div></section><section class="yt-module"><div class="yt-module-head"><h3>Vídeos publicados</h3><span>Seus registros</span></div><div class="yt-list">'+listItems+'</div><button class="small-btn" id="yt-publications" type="button" style="margin-top:12px">Acessar publicações →</button></section><section class="yt-module"><div class="yt-module-head"><h3>Estatísticas do canal</h3><span>Analytics</span></div><div class="yt-stat-hero"><span>Inscritos atuais</span><strong>—</strong></div><div class="yt-stat-lines"><div class="yt-stat-line"><span>Visualizações · últimos 28 dias</span><strong>—</strong></div><div class="yt-stat-line"><span>Tempo de exibição</span><strong>—</strong></div></div><div class="yt-empty-data" style="margin-top:14px">Conexão confirmada para <strong>'+channel+'</strong>, mas as estatísticas ainda não são consultadas por este painel.</div><button class="small-btn" id="yt-analytics" type="button" style="margin-top:12px">Sobre os dados de Analytics</button></section><section class="yt-module"><div class="yt-module-head"><h3>Próximas atividades</h3><span>Calendário local</span></div><div class="yt-list">'+upcoming+'</div><button class="small-btn" id="studio-calendar" type="button" style="margin-top:12px">Abrir calendário →</button></section><section class="yt-module yt-wide"><div class="yt-module-head"><h3>Roteiros e ideias do canal</h3><span>Conteúdo local</span></div><div class="yt-list">'+scriptItems+'</div><button class="small-btn" id="studio-scripts" type="button" style="margin-top:12px">Abrir roteiros →</button><p class="yt-studio-footer" style="margin-top:14px">Este painel é uma interface própria do Suprema Studio inspirada na organização do YouTube Studio. Os dados reais do YouTube só aparecerão após implementar e autorizar as consultas às APIs correspondentes. Os registros locais estão identificados separadamente.</p></section></div></div>';
   }
+  let twitchStatus={connected:false,configured:false,needsReconnect:false,displayName:""};
+  async function checkTwitchStatus(){
+    const card=document.querySelector('[data-platform="Twitch"]');
+    if(!card)return;
+    card.textContent="Verificando Twitch…";
+    try{
+      const auth=await window.SUPREMA_AUTH.getSession();
+      const token=auth?.data?.session?.access_token;
+      if(!token)throw new Error("Sessão indisponível");
+      const response=await fetch("/api/twitch/status",{headers:{Authorization:`Bearer ${token}`}});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||"Falha ao verificar Twitch");
+      twitchStatus={connected:result.connected===true,configured:result.configured===true,needsReconnect:result.needsReconnect===true,displayName:result.displayName||""};
+      card.textContent=twitchStatus.connected?"Abrir Twitch Studio →":twitchStatus.needsReconnect?"Reconectar Twitch →":"Conectar Twitch →";
+      const desc=card.closest(".platform-card")?.querySelector("p");
+      if(desc)desc.textContent=twitchStatus.connected?"Conta conectada: "+(twitchStatus.displayName||"Twitch")+". Abra seu estúdio.":twitchStatus.configured?"Conecte sua conta Twitch antes de abrir o estúdio.":"O estúdio está pronto, mas a integração precisa das credenciais Twitch no servidor.";
+    }catch(_){card.textContent="Verificar conexão Twitch →"}
+  }
   async function checkYouTubeStatus(){
     const label=$("youtube-connection-label"),button=$("youtube-open-button"),description=$("youtube-card-description");
     if(!label||!button)return;
@@ -225,7 +243,24 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
       return;
     }
     if(name==="Twitch"){
-      window.location.assign("/twitch-studio.html");
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if(button.disabled)return;
+      const originalText=button.textContent;
+      button.disabled=true;
+      try{
+        if(!window.SUPREMA_AUTH)throw new Error("A autenticação não foi carregada. Atualize a página.");
+        const {data:sessionData,error:sessionError}=await window.SUPREMA_AUTH.getSession();
+        const token=sessionData?.session?.access_token;
+        if(sessionError||!token)throw new Error("Sua sessão do Suprema Studio expirou. Entre novamente.");
+        if(twitchStatus.connected){window.location.assign("/twitch-studio.html");return;}
+        const response=await fetch("/auth/twitch/start",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"}});
+        let result={};try{result=await response.json()}catch(_){}
+        if(!response.ok||!result.url)throw new Error(result.error||"Não foi possível iniciar a conexão Twitch.");
+        const destination=new URL(result.url);
+        if(destination.protocol!=="https:"||destination.hostname!=="id.twitch.tv")throw new Error("Endereço de autorização Twitch inválido.");
+        window.location.assign(destination.href);
+      }catch(error){alert(error.message||"Erro ao conectar com a Twitch.");button.disabled=false;button.textContent=originalText}
       return;
     }
     const detail=$("platform-detail");
