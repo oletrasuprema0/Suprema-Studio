@@ -580,14 +580,16 @@ app.get("/api/youtube/analytics", async (req, res) => {
       metrics: "views,estimatedMinutesWatched,subscribersGained,subscribersLost"
     }).toString();
 
-    const [analyticsResponse, channelResponse] = await Promise.all([
+    const dailyUrl = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
+    dailyUrl.search = new URLSearchParams({ ids: "channel==MINE", startDate: fmt(start), endDate: fmt(end), metrics: "views", dimensions: "day", sort: "day" }).toString();
+    const [analyticsResponse, channelResponse, dailyResponse] = await Promise.all([
       fetch(analyticsUrl, { headers: { Authorization: `Bearer ${accessToken}` } }),
-      fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true", {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      })
+      fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true", { headers: { Authorization: `Bearer ${accessToken}` } }),
+      fetch(dailyUrl, { headers: { Authorization: `Bearer ${accessToken}` } })
     ]);
     const analyticsData = await analyticsResponse.json().catch(() => ({}));
     const channelData = await channelResponse.json().catch(() => ({}));
+    const dailyData = await dailyResponse.json().catch(() => ({}));
 
     if (!analyticsResponse.ok) {
       console.error("YouTube Analytics API:", analyticsData.error?.message || analyticsResponse.status);
@@ -608,7 +610,9 @@ app.get("/api/youtube/analytics", async (req, res) => {
 
     return res.json({
       channelName,
+      channelAvatar: channelData.items?.[0]?.snippet?.thumbnails?.high?.url || channelData.items?.[0]?.snippet?.thumbnails?.default?.url || null,
       period: { startDate: fmt(start), endDate: fmt(end) },
+      daily: (dailyData.rows || []).map(r => ({ date: r[0], views: Number(r[1] || 0) })),
       metrics: {
         views: Number(row[0] || 0),
         estimatedMinutesWatched: Number(row[1] || 0),
@@ -625,6 +629,85 @@ app.get("/api/youtube/analytics", async (req, res) => {
       error: "Não foi possível carregar as métricas agora. Tente novamente em instantes.",
       retryable: true
     });
+  }
+});
+
+// --------------------------------------------------
+// DADOS DO CANAL, VÍDEOS/SHORTS E COMENTÁRIOS
+// --------------------------------------------------
+async function getYouTubeContext(req) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return { error: { status: 401, message: "Sessão inválida. Entre novamente no Suprema Studio." } };
+  if (!supabase) return { error: { status: 503, message: "Banco de dados não configurado." } };
+  const { data: account, error: accountError } = await supabase
+    .from("social_accounts")
+    .select("id, display_name, external_id, status")
+    .eq("user_id", user.id).eq("platform", "youtube")
+    .order("last_sync_at", { ascending: false }).limit(1).maybeSingle();
+  if (accountError) throw accountError;
+  if (!account || account.status !== "connected") return { error: { status: 409, message: "O canal do YouTube não está conectado.", needsReconnect: true } };
+  const { data: tokenRecord, error: tokenError } = await supabase
+    .from("social_tokens").select("expires_at, access_token_enc, refresh_token_enc")
+    .eq("account_id", account.id).maybeSingle();
+  if (tokenError) throw tokenError;
+  if (!tokenRecord?.access_token_enc || !tokenRecord?.refresh_token_enc) return { error: { status: 409, message: "A autorização do YouTube está incompleta. Reconecte o canal.", needsReconnect: true } };
+  const expiration = tokenRecord.expires_at ? new Date(tokenRecord.expires_at).getTime() : 0;
+  const accessToken = (!Number.isFinite(expiration) || expiration <= Date.now() + 60000)
+    ? (await refreshYouTubeAccessToken(account.id)).accessToken
+    : decryptToken(tokenRecord.access_token_enc);
+  return { user, account, accessToken };
+}
+
+async function youtubeJson(url, accessToken) {
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` }, cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(data.error?.message || `YouTube API retornou HTTP ${response.status}`);
+    err.status = response.status; throw err;
+  }
+  return data;
+}
+
+app.get("/api/youtube/content", async (req, res) => {
+  try {
+    const ctx = await getYouTubeContext(req);
+    if (ctx.error) return res.status(ctx.error.status).json(ctx.error);
+    const { accessToken, account } = ctx;
+    const channelData = await youtubeJson("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&mine=true", accessToken);
+    const channel = channelData.items?.[0];
+    if (!channel) return res.status(404).json({ error: "Não foi possível encontrar o canal autorizado." });
+    const uploads = channel.contentDetails?.relatedPlaylists?.uploads;
+    let videos = [];
+    if (uploads) {
+      const playlist = await youtubeJson("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=" + encodeURIComponent(uploads) + "&maxResults=25", accessToken);
+      const ids = (playlist.items || []).map(x => x.contentDetails?.videoId).filter(Boolean);
+      if (ids.length) {
+        const detail = await youtubeJson("https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,status&id=" + ids.map(encodeURIComponent).join(","), accessToken);
+        videos = (detail.items || []).map(v => ({ id: v.id, title: v.snippet?.title || "Vídeo sem título", description: v.snippet?.description || "", publishedAt: v.snippet?.publishedAt || null, thumbnail: v.snippet?.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || null, url: "https://www.youtube.com/watch?v=" + v.id, views: Number(v.statistics?.viewCount || 0), likes: Number(v.statistics?.likeCount || 0), comments: Number(v.statistics?.commentCount || 0), duration: v.contentDetails?.duration || null, privacyStatus: v.status?.privacyStatus || "unknown" }));
+      }
+    }
+    return res.json({ channel: { id: channel.id, title: channel.snippet?.title || account.display_name, avatar: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.default?.url || null, subscribers: channel.statistics?.hiddenSubscriberCount ? null : Number(channel.statistics?.subscriberCount || 0), totalViews: Number(channel.statistics?.viewCount || 0), videoCount: Number(channel.statistics?.videoCount || 0) }, videos, updatedAt: new Date().toISOString(), source: "YouTube Data API v3" });
+  } catch (error) {
+    console.error("Erro ao carregar conteúdo YouTube:", error.message);
+    return res.status(error.status || 500).json({ error: error.message || "Não foi possível carregar os vídeos do canal." });
+  }
+});
+
+app.get("/api/youtube/community", async (req, res) => {
+  try {
+    const ctx = await getYouTubeContext(req);
+    if (ctx.error) return res.status(ctx.error.status).json(ctx.error);
+    const data = await youtubeJson("https://www.googleapis.com/youtube/v3/commentThreads?part=snippet,replies&allThreadsRelatedToChannel=true&order=time&maxResults=25&textFormat=plainText", ctx.accessToken);
+    const comments = (data.items || []).map(item => {
+      const c = item.snippet?.topLevelComment;
+      const s = c?.snippet || {};
+      return { id: c?.id || item.id, videoId: item.snippet?.videoId || null, videoTitle: item.snippet?.videoTitle || "Vídeo do canal", author: s.authorDisplayName || "Usuário", authorAvatar: s.authorProfileImageUrl || null, text: s.textDisplay || "", publishedAt: s.publishedAt || null, likeCount: Number(s.likeCount || 0), replyCount: Number(item.snippet?.totalReplyCount || 0), canReply: Boolean(s.canReply) };
+    });
+    return res.json({ comments, updatedAt: new Date().toISOString(), source: "YouTube Data API v3" });
+  } catch (error) {
+    console.error("Erro ao carregar comunidade YouTube:", error.message);
+    const message = error.status === 403 ? "O YouTube não liberou os comentários para esta conta ou o recurso está desativado no canal." : (error.message || "Não foi possível carregar os comentários.");
+    return res.status(error.status || 500).json({ error: message });
   }
 });
 
