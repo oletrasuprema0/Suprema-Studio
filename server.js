@@ -587,7 +587,7 @@ app.get("/api/youtube/analytics", async (req, res) => {
     const dailyUrl = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
     dailyUrl.search = new URLSearchParams({ ids: "channel==MINE", startDate: fmt(start), endDate: fmt(end), metrics: "views", dimensions: "day", sort: "day" }).toString();
     const rankingUrl = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
-    rankingUrl.search = new URLSearchParams({ ids: "channel==MINE", startDate: fmt(start), endDate: fmt(end), metrics: "views,likes,subscribersGained", dimensions: "video", sort: "-views", maxResults: "10" }).toString();
+    rankingUrl.search = new URLSearchParams({ ids: "channel==MINE", startDate: fmt(start), endDate: fmt(end), metrics: "views,likes,subscribersGained", dimensions: "video", sort: "-views", maxResults: "50" }).toString();
     const [analyticsResponse, channelResponse, dailyResponse, previousResponse, rankingResponse] = await Promise.all([
       fetch(analyticsUrl, { headers: { Authorization: `Bearer ${accessToken}` } }),
       fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true", { headers: { Authorization: `Bearer ${accessToken}` } }),
@@ -600,6 +600,48 @@ app.get("/api/youtube/analytics", async (req, res) => {
     const dailyData = await dailyResponse.json().catch(() => ({}));
     const previousData = await previousResponse.json().catch(() => ({}));
     const rankingData = await rankingResponse.json().catch(() => ({}));
+    // O relatório Analytics fornece IDs e métricas, mas não o status de privacidade.
+    // Buscamos metadados dos IDs retornados para excluir não listados/privados e obter títulos
+    // mesmo quando o conteúdo não aparece nos 50 uploads recentes carregados na outra aba.
+    let rankingItems = [];
+    let rankingMetadataAvailable = true;
+    if (rankingResponse.ok) {
+      const rankingRows = rankingData.rows || [];
+      const rankingIds = [...new Set(rankingRows.map(r => String(r[0] || "")).filter(Boolean))];
+      if (rankingIds.length) {
+        try {
+          const detailsUrl = "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,status,liveStreamingDetails&id=" + rankingIds.map(encodeURIComponent).join(",");
+          const detailsResponse = await fetch(detailsUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+          const detailsData = await detailsResponse.json().catch(() => ({}));
+          if (!detailsResponse.ok) rankingMetadataAvailable = false;
+          else {
+            const detailsById = new Map((detailsData.items || []).map(v => [v.id, v]));
+            rankingItems = rankingRows.map(r => {
+              const video = detailsById.get(String(r[0] || ""));
+              if (!video || video.status?.privacyStatus !== "public") return null;
+              const duration = video.contentDetails?.duration || null;
+              const seconds = durationToSeconds(duration);
+              const isLive = Boolean(video.liveStreamingDetails) || ["live", "upcoming"].includes(video.snippet?.liveBroadcastContent);
+              const type = isLive ? "live" : (seconds !== null && seconds <= 180 ? "short" : "video");
+              return {
+                videoId: video.id,
+                title: video.snippet?.title || "Vídeo sem título",
+                thumbnail: video.snippet?.thumbnails?.medium?.url || video.snippet?.thumbnails?.default?.url || null,
+                publishedAt: video.snippet?.publishedAt || null,
+                type,
+                privacyStatus: video.status?.privacyStatus,
+                views: Number(r[1] || 0),
+                likes: Number(r[2] || 0),
+                subscribersGained: Number(r[3] || 0)
+              };
+            }).filter(Boolean).sort((a, b) => b.views - a.views).slice(0, 10);
+          }
+        } catch (metadataError) {
+          rankingMetadataAvailable = false;
+          console.error("Não foi possível validar privacidade do ranking YouTube:", metadataError.message);
+        }
+      }
+    }
 
     if (!analyticsResponse.ok) {
       console.error("YouTube Analytics API:", analyticsData.error?.message || analyticsResponse.status);
@@ -624,8 +666,9 @@ app.get("/api/youtube/analytics", async (req, res) => {
       period: { startDate: fmt(start), endDate: fmt(end), previousStartDate: fmt(previousStart), previousEndDate: fmt(previousEnd) },
       daily: (dailyData.rows || []).map(r => ({ date: r[0], views: Number(r[1] || 0) })),
       previousMetrics: (() => { const r = previousData.rows?.[0] || []; return { views: Number(r[0] || 0), estimatedMinutesWatched: Number(r[1] || 0), subscribersGained: Number(r[2] || 0), subscribersLost: Number(r[3] || 0), available: previousResponse.ok }; })(),
-      ranking: (rankingResponse.ok ? (rankingData.rows || []).map(r => ({ videoId: r[0], views: Number(r[1] || 0), likes: Number(r[2] || 0), subscribersGained: Number(r[3] || 0) })) : []),
-      rankingAvailable: rankingResponse.ok,
+      ranking: rankingItems,
+      rankingAvailable: rankingResponse.ok && rankingMetadataAvailable,
+      rankingPublicOnly: true,
       metrics: {
         views: Number(row[0] || 0),
         channelTotalViews: Number(stats.viewCount || 0),
