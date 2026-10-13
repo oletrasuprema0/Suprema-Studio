@@ -32,7 +32,9 @@
 </section>
 <p class="foot">Os números são solicitados às APIs oficiais do YouTube e não são simulados. O Analytics considera os últimos 28 dias completos, excluindo o dia atual. Se os dados não aparecerem, a mensagem acima informa o que fazer.</p>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/config.js"></script>
+<script src="/auth.js"></script>
 <script src="/auth.js"></script>
 <script>
 (function(){
@@ -45,7 +47,7 @@
     setStatus("Consultando o YouTube Analytics…");
     ["views","watch","gained","lost","subs"].forEach(id=>$(id).textContent="—");
     try{
-      if(!window.SUPREMA_AUTH)throw new Error("A autenticação não carregou. Volte ao painel e atualize a página.");
+      if(!window.SUPREMA_AUTH)throw new Error("A autenticação não foi inicializada. Verifique se /config.js e /auth.js carregaram corretamente e tente atualizar a página.");
       const sessionResult=await window.SUPREMA_AUTH.getSession();
       const token=sessionResult?.data?.session?.access_token;
       if(!token)throw new Error("Sua sessão expirou. Entre novamente no Suprema Studio.");
