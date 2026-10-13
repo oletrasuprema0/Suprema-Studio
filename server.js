@@ -514,23 +514,16 @@ app.get("/api/youtube/status", async (req, res) => {
 
 
 // --------------------------------------------------
-// ANALYTICS DO YOUTUBE (ÚLTIMOS 28 DIAS COMPLETOS)
+// ANALYTICS REAL DO CANAL YOUTUBE
 // --------------------------------------------------
-
 app.get("/api/youtube/analytics", async (req, res) => {
   try {
     const user = await getAuthenticatedUser(req);
-
     if (!user) {
-      return res.status(401).json({
-        error: "Sessão inválida. Entre novamente no Suprema Studio."
-      });
+      return res.status(401).json({ error: "Sessão inválida. Entre novamente no Suprema Studio." });
     }
-
-    if (!supabase || !getYouTubeConfig() || !getEncryptionKey()) {
-      return res.status(503).json({
-        error: "A integração do YouTube não está configurada corretamente."
-      });
+    if (!supabase) {
+      return res.status(503).json({ error: "Banco de dados não configurado." });
     }
 
     const { data: account, error: accountError } = await supabase
@@ -542,195 +535,95 @@ app.get("/api/youtube/analytics", async (req, res) => {
       .limit(1)
       .maybeSingle();
 
-    if (accountError) {
-      console.error("Falha ao consultar conta para Analytics:", accountError.message);
-      return res.status(500).json({
-        error: "Não foi possível consultar a conexão do YouTube."
-      });
-    }
-
-    if (!account) {
-      return res.status(404).json({
-        error: "Nenhum canal do YouTube está conectado."
-      });
-    }
-
-    if (account.status !== "connected") {
+    if (accountError) throw accountError;
+    if (!account || account.status !== "connected") {
       return res.status(409).json({
-        error: "A conexão do YouTube precisa ser revalidada.",
+        error: "O canal do YouTube não está conectado. Volte ao painel principal e conecte a conta.",
         needsReconnect: true
       });
     }
 
     const { data: tokenRecord, error: tokenError } = await supabase
       .from("social_tokens")
-      .select("expires_at, refresh_token_enc, access_token_enc")
+      .select("expires_at, access_token_enc, refresh_token_enc")
       .eq("account_id", account.id)
       .maybeSingle();
 
-    if (tokenError) {
-      console.error("Falha ao consultar tokens para Analytics:", tokenError.message);
-      return res.status(500).json({
-        error: "Não foi possível verificar a autorização do YouTube."
-      });
-    }
-
-    if (!tokenRecord?.refresh_token_enc || !tokenRecord?.access_token_enc) {
+    if (tokenError) throw tokenError;
+    if (!tokenRecord?.access_token_enc || !tokenRecord?.refresh_token_enc) {
       return res.status(409).json({
-        error: "A conexão do YouTube precisa ser revalidada.",
+        error: "A autorização do YouTube está incompleta. Reconecte seu canal.",
         needsReconnect: true
       });
     }
 
     let accessToken;
-    const expiration = tokenRecord.expires_at
-      ? new Date(tokenRecord.expires_at).getTime()
-      : 0;
-
+    const expiration = tokenRecord.expires_at ? new Date(tokenRecord.expires_at).getTime() : 0;
     if (!Number.isFinite(expiration) || expiration <= Date.now() + 60000) {
-      try {
-        const refreshed = await refreshYouTubeAccessToken(account.id);
-        accessToken = refreshed.accessToken;
-      } catch (error) {
-        console.error(
-          "Falha ao renovar token para Analytics:",
-          error.code || "REFRESH_FAILED"
-        );
-
-        if (error.code === "invalid_grant" || error.code === "NO_REFRESH_TOKEN") {
-          await supabase
-            .from("social_accounts")
-            .update({ status: "reconnect_required" })
-            .eq("id", account.id)
-            .eq("user_id", user.id);
-
-          return res.status(409).json({
-            error: "A conexão do YouTube expirou. Conecte o canal novamente.",
-            needsReconnect: true
-          });
-        }
-
-        return res.status(503).json({
-          error: "Não foi possível renovar o acesso ao YouTube agora.",
-          retryable: true
-        });
-      }
+      const refreshed = await refreshYouTubeAccessToken(account.id);
+      accessToken = refreshed.accessToken;
     } else {
-      try {
-        accessToken = decryptToken(tokenRecord.access_token_enc);
-      } catch (error) {
-        console.error("Falha ao descriptografar token para Analytics.");
-        return res.status(503).json({
-          error: "Não foi possível acessar a autorização salva do YouTube."
-        });
-      }
+      accessToken = decryptToken(tokenRecord.access_token_enc);
     }
 
-    if (!accessToken) {
-      return res.status(409).json({
-        error: "A conexão do YouTube precisa ser revalidada.",
-        needsReconnect: true
-      });
-    }
-
-    // O YouTube Analytics trabalha com datas; encerramos ontem para evitar
-    // apresentar como completo um dia que ainda está em andamento.
-    const end = new Date();
-    end.setUTCHours(0, 0, 0, 0);
-    end.setUTCDate(end.getUTCDate() - 1);
-
+    const now = new Date();
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
     const start = new Date(end);
     start.setUTCDate(start.getUTCDate() - 27);
+    const fmt = d => d.toISOString().slice(0, 10);
 
-    const formatDate = date => date.toISOString().slice(0, 10);
-    const startDate = formatDate(start);
-    const endDate = formatDate(end);
-
-    const params = new URLSearchParams({
+    const analyticsUrl = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
+    analyticsUrl.search = new URLSearchParams({
       ids: "channel==MINE",
-      startDate,
-      endDate,
+      startDate: fmt(start),
+      endDate: fmt(end),
       metrics: "views,estimatedMinutesWatched,subscribersGained,subscribersLost"
-    });
+    }).toString();
 
-    let analyticsResponse;
-    try {
-      analyticsResponse = await fetch(
-        `https://youtubeanalytics.googleapis.com/v2/reports?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: "application/json"
-          }
-        }
-      );
-    } catch {
-      return res.status(502).json({
-        error: "Não foi possível alcançar o serviço de Analytics do YouTube.",
-        retryable: true
-      });
-    }
-
-    let analyticsData;
-    try {
-      analyticsData = await analyticsResponse.json();
-    } catch {
-      analyticsData = {};
-    }
+    const [analyticsResponse, channelResponse] = await Promise.all([
+      fetch(analyticsUrl, { headers: { Authorization: `Bearer ${accessToken}` } }),
+      fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true", {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      })
+    ]);
+    const analyticsData = await analyticsResponse.json().catch(() => ({}));
+    const channelData = await channelResponse.json().catch(() => ({}));
 
     if (!analyticsResponse.ok) {
-      const upstreamStatus = analyticsResponse.status;
-      console.error("YouTube Analytics respondeu com HTTP:", upstreamStatus);
-
-      if (upstreamStatus === 401) {
-        return res.status(502).json({
-          error: "O YouTube recusou a autorização. Tente reconectar o canal.",
-          needsReconnect: true
-        });
-      }
-
-      if (upstreamStatus === 403) {
-        return res.status(403).json({
-          error: "O Google não liberou essa consulta. Verifique a permissão da YouTube Analytics API e os escopos autorizados."
-        });
-      }
-
-      if (upstreamStatus === 400) {
-        return res.status(502).json({
-          error: "O YouTube não aceitou os parâmetros da consulta de Analytics."
-        });
-      }
-
-      return res.status(502).json({
-        error: "Não foi possível carregar os Analytics do YouTube agora.",
-        retryable: upstreamStatus >= 500 || upstreamStatus === 429
+      console.error("YouTube Analytics API:", analyticsData.error?.message || analyticsResponse.status);
+      const status = analyticsResponse.status === 401 || analyticsResponse.status === 403 ? 502 : analyticsResponse.status;
+      return res.status(status).json({
+        error: analyticsData.error?.message || "Não foi possível consultar o YouTube Analytics. Verifique as permissões da API e tente novamente.",
+        apiStatus: analyticsResponse.status,
+        retryable: analyticsResponse.status >= 500
       });
     }
+    if (!channelResponse.ok) {
+      console.error("YouTube Data API:", channelData.error?.message || channelResponse.status);
+    }
 
-    const values = analyticsData.rows?.[0] || [0, 0, 0, 0];
+    const row = analyticsData.rows?.[0] || [];
+    const stats = channelData.items?.[0]?.statistics || {};
+    const channelName = channelData.items?.[0]?.snippet?.title || account.display_name || "Canal do YouTube";
 
     return res.json({
-      connected: true,
-      channelName: account.display_name,
-      channelId: account.external_id,
-      period: {
-        startDate,
-        endDate,
-        days: 28
-      },
+      channelName,
+      period: { startDate: fmt(start), endDate: fmt(end) },
       metrics: {
-        views: Number(values[0]) || 0,
-        estimatedMinutesWatched: Number(values[1]) || 0,
-        subscribersGained: Number(values[2]) || 0,
-        subscribersLost: Number(values[3]) || 0,
-        subscribersNet: (Number(values[2]) || 0) - (Number(values[3]) || 0)
+        views: Number(row[0] || 0),
+        estimatedMinutesWatched: Number(row[1] || 0),
+        subscribersGained: Number(row[2] || 0),
+        subscribersLost: Number(row[3] || 0),
+        subscribers: stats.hiddenSubscriberCount ? null : Number(stats.subscriberCount || 0)
       },
-      source: "youtube_analytics_api"
+      source: "YouTube Analytics API",
+      updatedAt: new Date().toISOString()
     });
   } catch (error) {
-    console.error("Erro interno nos Analytics do YouTube:", error.message);
+    console.error("Erro ao consultar analytics YouTube:", error.code || error.message);
     return res.status(500).json({
-      error: "Erro interno ao consultar os Analytics do YouTube."
+      error: "Não foi possível carregar as métricas agora. Tente novamente em instantes.",
+      retryable: true
     });
   }
 });
