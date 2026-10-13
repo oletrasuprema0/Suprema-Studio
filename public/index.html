@@ -224,6 +224,10 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
       window.location.assign("/youtube-studio.html");
       return;
     }
+    if(name==="Twitch"){
+      window.location.assign("/twitch-studio.html");
+      return;
+    }
     const detail=$("platform-detail");
     const matchesPlatform=value=>{const v=String(value||'').toLowerCase();return v.includes(name.toLowerCase())||(name==='YouTube'&&v.includes('shorts'))||(name==='Instagram'&&v.includes('reels'))||(name==='Twitch'&&v.includes('live'))};
     const planned=data.calendario.filter(x=>matchesPlatform(x.platform)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
