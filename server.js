@@ -512,6 +512,229 @@ app.get("/api/youtube/status", async (req, res) => {
   }
 });
 
+
+// --------------------------------------------------
+// ANALYTICS DO YOUTUBE (ÚLTIMOS 28 DIAS COMPLETOS)
+// --------------------------------------------------
+
+app.get("/api/youtube/analytics", async (req, res) => {
+  try {
+    const user = await getAuthenticatedUser(req);
+
+    if (!user) {
+      return res.status(401).json({
+        error: "Sessão inválida. Entre novamente no Suprema Studio."
+      });
+    }
+
+    if (!supabase || !getYouTubeConfig() || !getEncryptionKey()) {
+      return res.status(503).json({
+        error: "A integração do YouTube não está configurada corretamente."
+      });
+    }
+
+    const { data: account, error: accountError } = await supabase
+      .from("social_accounts")
+      .select("id, display_name, external_id, status")
+      .eq("user_id", user.id)
+      .eq("platform", "youtube")
+      .order("last_sync_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (accountError) {
+      console.error("Falha ao consultar conta para Analytics:", accountError.message);
+      return res.status(500).json({
+        error: "Não foi possível consultar a conexão do YouTube."
+      });
+    }
+
+    if (!account) {
+      return res.status(404).json({
+        error: "Nenhum canal do YouTube está conectado."
+      });
+    }
+
+    if (account.status !== "connected") {
+      return res.status(409).json({
+        error: "A conexão do YouTube precisa ser revalidada.",
+        needsReconnect: true
+      });
+    }
+
+    const { data: tokenRecord, error: tokenError } = await supabase
+      .from("social_tokens")
+      .select("expires_at, refresh_token_enc, access_token_enc")
+      .eq("account_id", account.id)
+      .maybeSingle();
+
+    if (tokenError) {
+      console.error("Falha ao consultar tokens para Analytics:", tokenError.message);
+      return res.status(500).json({
+        error: "Não foi possível verificar a autorização do YouTube."
+      });
+    }
+
+    if (!tokenRecord?.refresh_token_enc || !tokenRecord?.access_token_enc) {
+      return res.status(409).json({
+        error: "A conexão do YouTube precisa ser revalidada.",
+        needsReconnect: true
+      });
+    }
+
+    let accessToken;
+    const expiration = tokenRecord.expires_at
+      ? new Date(tokenRecord.expires_at).getTime()
+      : 0;
+
+    if (!Number.isFinite(expiration) || expiration <= Date.now() + 60000) {
+      try {
+        const refreshed = await refreshYouTubeAccessToken(account.id);
+        accessToken = refreshed.accessToken;
+      } catch (error) {
+        console.error(
+          "Falha ao renovar token para Analytics:",
+          error.code || "REFRESH_FAILED"
+        );
+
+        if (error.code === "invalid_grant" || error.code === "NO_REFRESH_TOKEN") {
+          await supabase
+            .from("social_accounts")
+            .update({ status: "reconnect_required" })
+            .eq("id", account.id)
+            .eq("user_id", user.id);
+
+          return res.status(409).json({
+            error: "A conexão do YouTube expirou. Conecte o canal novamente.",
+            needsReconnect: true
+          });
+        }
+
+        return res.status(503).json({
+          error: "Não foi possível renovar o acesso ao YouTube agora.",
+          retryable: true
+        });
+      }
+    } else {
+      try {
+        accessToken = decryptToken(tokenRecord.access_token_enc);
+      } catch (error) {
+        console.error("Falha ao descriptografar token para Analytics.");
+        return res.status(503).json({
+          error: "Não foi possível acessar a autorização salva do YouTube."
+        });
+      }
+    }
+
+    if (!accessToken) {
+      return res.status(409).json({
+        error: "A conexão do YouTube precisa ser revalidada.",
+        needsReconnect: true
+      });
+    }
+
+    // O YouTube Analytics trabalha com datas; encerramos ontem para evitar
+    // apresentar como completo um dia que ainda está em andamento.
+    const end = new Date();
+    end.setUTCHours(0, 0, 0, 0);
+    end.setUTCDate(end.getUTCDate() - 1);
+
+    const start = new Date(end);
+    start.setUTCDate(start.getUTCDate() - 27);
+
+    const formatDate = date => date.toISOString().slice(0, 10);
+    const startDate = formatDate(start);
+    const endDate = formatDate(end);
+
+    const params = new URLSearchParams({
+      ids: "channel==MINE",
+      startDate,
+      endDate,
+      metrics: "views,estimatedMinutesWatched,subscribersGained,subscribersLost"
+    });
+
+    let analyticsResponse;
+    try {
+      analyticsResponse = await fetch(
+        `https://youtubeanalytics.googleapis.com/v2/reports?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json"
+          }
+        }
+      );
+    } catch {
+      return res.status(502).json({
+        error: "Não foi possível alcançar o serviço de Analytics do YouTube.",
+        retryable: true
+      });
+    }
+
+    let analyticsData;
+    try {
+      analyticsData = await analyticsResponse.json();
+    } catch {
+      analyticsData = {};
+    }
+
+    if (!analyticsResponse.ok) {
+      const upstreamStatus = analyticsResponse.status;
+      console.error("YouTube Analytics respondeu com HTTP:", upstreamStatus);
+
+      if (upstreamStatus === 401) {
+        return res.status(502).json({
+          error: "O YouTube recusou a autorização. Tente reconectar o canal.",
+          needsReconnect: true
+        });
+      }
+
+      if (upstreamStatus === 403) {
+        return res.status(403).json({
+          error: "O Google não liberou essa consulta. Verifique a permissão da YouTube Analytics API e os escopos autorizados."
+        });
+      }
+
+      if (upstreamStatus === 400) {
+        return res.status(502).json({
+          error: "O YouTube não aceitou os parâmetros da consulta de Analytics."
+        });
+      }
+
+      return res.status(502).json({
+        error: "Não foi possível carregar os Analytics do YouTube agora.",
+        retryable: upstreamStatus >= 500 || upstreamStatus === 429
+      });
+    }
+
+    const values = analyticsData.rows?.[0] || [0, 0, 0, 0];
+
+    return res.json({
+      connected: true,
+      channelName: account.display_name,
+      channelId: account.external_id,
+      period: {
+        startDate,
+        endDate,
+        days: 28
+      },
+      metrics: {
+        views: Number(values[0]) || 0,
+        estimatedMinutesWatched: Number(values[1]) || 0,
+        subscribersGained: Number(values[2]) || 0,
+        subscribersLost: Number(values[3]) || 0,
+        subscribersNet: (Number(values[2]) || 0) - (Number(values[3]) || 0)
+      },
+      source: "youtube_analytics_api"
+    });
+  } catch (error) {
+    console.error("Erro interno nos Analytics do YouTube:", error.message);
+    return res.status(500).json({
+      error: "Erro interno ao consultar os Analytics do YouTube."
+    });
+  }
+});
+
 // --------------------------------------------------
 // INÍCIO DO OAUTH
 // --------------------------------------------------
