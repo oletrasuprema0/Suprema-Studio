@@ -697,7 +697,13 @@ app.get("/api/youtube/community", async (req, res) => {
   try {
     const ctx = await getYouTubeContext(req);
     if (ctx.error) return res.status(ctx.error.status).json(ctx.error);
-    const data = await youtubeJson("https://www.googleapis.com/youtube/v3/commentThreads?part=snippet,replies&allThreadsRelatedToChannel=true&order=time&maxResults=25&textFormat=plainText", ctx.accessToken);
+    // O parâmetro correto da YouTube Data API é allThreadsRelatedToChannelId e exige o ID do canal.
+    // Buscar o canal autenticado primeiro evita enviar um parâmetro inválido e obter erro 400/403.
+    const channelData = await youtubeJson("https://www.googleapis.com/youtube/v3/channels?part=id&mine=true", ctx.accessToken);
+    const channelId = channelData.items?.[0]?.id;
+    if (!channelId) return res.status(404).json({ error: "Não foi possível identificar o canal autorizado do YouTube." });
+    const url = "https://www.googleapis.com/youtube/v3/commentThreads?part=snippet,replies&allThreadsRelatedToChannelId=" + encodeURIComponent(channelId) + "&order=time&maxResults=25&textFormat=plainText";
+    const data = await youtubeJson(url, ctx.accessToken);
     const comments = (data.items || []).map(item => {
       const c = item.snippet?.topLevelComment;
       const s = c?.snippet || {};
