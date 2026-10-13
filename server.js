@@ -580,16 +580,26 @@ app.get("/api/youtube/analytics", async (req, res) => {
       metrics: "views,estimatedMinutesWatched,subscribersGained,subscribersLost"
     }).toString();
 
+    const previousEnd = new Date(start); previousEnd.setUTCDate(previousEnd.getUTCDate() - 1);
+    const previousStart = new Date(previousEnd); previousStart.setUTCDate(previousStart.getUTCDate() - 27);
+    const previousUrl = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
+    previousUrl.search = new URLSearchParams({ ids: "channel==MINE", startDate: fmt(previousStart), endDate: fmt(previousEnd), metrics: "views,estimatedMinutesWatched,subscribersGained,subscribersLost" }).toString();
     const dailyUrl = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
     dailyUrl.search = new URLSearchParams({ ids: "channel==MINE", startDate: fmt(start), endDate: fmt(end), metrics: "views", dimensions: "day", sort: "day" }).toString();
-    const [analyticsResponse, channelResponse, dailyResponse] = await Promise.all([
+    const rankingUrl = new URL("https://youtubeanalytics.googleapis.com/v2/reports");
+    rankingUrl.search = new URLSearchParams({ ids: "channel==MINE", startDate: fmt(start), endDate: fmt(end), metrics: "views,likes,subscribersGained", dimensions: "video", sort: "-views", maxResults: "10" }).toString();
+    const [analyticsResponse, channelResponse, dailyResponse, previousResponse, rankingResponse] = await Promise.all([
       fetch(analyticsUrl, { headers: { Authorization: `Bearer ${accessToken}` } }),
       fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true", { headers: { Authorization: `Bearer ${accessToken}` } }),
-      fetch(dailyUrl, { headers: { Authorization: `Bearer ${accessToken}` } })
+      fetch(dailyUrl, { headers: { Authorization: `Bearer ${accessToken}` } }),
+      fetch(previousUrl, { headers: { Authorization: `Bearer ${accessToken}` } }),
+      fetch(rankingUrl, { headers: { Authorization: `Bearer ${accessToken}` } })
     ]);
     const analyticsData = await analyticsResponse.json().catch(() => ({}));
     const channelData = await channelResponse.json().catch(() => ({}));
     const dailyData = await dailyResponse.json().catch(() => ({}));
+    const previousData = await previousResponse.json().catch(() => ({}));
+    const rankingData = await rankingResponse.json().catch(() => ({}));
 
     if (!analyticsResponse.ok) {
       console.error("YouTube Analytics API:", analyticsData.error?.message || analyticsResponse.status);
@@ -611,8 +621,11 @@ app.get("/api/youtube/analytics", async (req, res) => {
     return res.json({
       channelName,
       channelAvatar: channelData.items?.[0]?.snippet?.thumbnails?.high?.url || channelData.items?.[0]?.snippet?.thumbnails?.default?.url || null,
-      period: { startDate: fmt(start), endDate: fmt(end) },
+      period: { startDate: fmt(start), endDate: fmt(end), previousStartDate: fmt(previousStart), previousEndDate: fmt(previousEnd) },
       daily: (dailyData.rows || []).map(r => ({ date: r[0], views: Number(r[1] || 0) })),
+      previousMetrics: (() => { const r = previousData.rows?.[0] || []; return { views: Number(r[0] || 0), estimatedMinutesWatched: Number(r[1] || 0), subscribersGained: Number(r[2] || 0), subscribersLost: Number(r[3] || 0), available: previousResponse.ok }; })(),
+      ranking: (rankingResponse.ok ? (rankingData.rows || []).map(r => ({ videoId: r[0], views: Number(r[1] || 0), likes: Number(r[2] || 0), subscribersGained: Number(r[3] || 0) })) : []),
+      rankingAvailable: rankingResponse.ok,
       metrics: {
         views: Number(row[0] || 0),
         channelTotalViews: Number(stats.viewCount || 0),
