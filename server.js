@@ -615,6 +615,7 @@ app.get("/api/youtube/analytics", async (req, res) => {
       daily: (dailyData.rows || []).map(r => ({ date: r[0], views: Number(r[1] || 0) })),
       metrics: {
         views: Number(row[0] || 0),
+        channelTotalViews: Number(stats.viewCount || 0),
         estimatedMinutesWatched: Number(row[1] || 0),
         subscribersGained: Number(row[2] || 0),
         subscribersLost: Number(row[3] || 0),
@@ -679,40 +680,93 @@ app.get("/api/youtube/content", async (req, res) => {
     const uploads = channel.contentDetails?.relatedPlaylists?.uploads;
     let videos = [];
     if (uploads) {
-      const playlist = await youtubeJson("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=" + encodeURIComponent(uploads) + "&maxResults=25", accessToken);
-      const ids = (playlist.items || []).map(x => x.contentDetails?.videoId).filter(Boolean);
+      const playlist = await youtubeJson("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=" + encodeURIComponent(uploads) + "&maxResults=50", accessToken);
+      const ids = (playlist.items || []).map(x => x.contentDetails?.videoId || x.snippet?.resourceId?.videoId).filter(Boolean);
       if (ids.length) {
-        const detail = await youtubeJson("https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,status&id=" + ids.map(encodeURIComponent).join(","), accessToken);
-        videos = (detail.items || []).map(v => ({ id: v.id, title: v.snippet?.title || "Vídeo sem título", description: v.snippet?.description || "", publishedAt: v.snippet?.publishedAt || null, thumbnail: v.snippet?.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || null, url: "https://www.youtube.com/watch?v=" + v.id, views: Number(v.statistics?.viewCount || 0), likes: Number(v.statistics?.likeCount || 0), comments: Number(v.statistics?.commentCount || 0), duration: v.contentDetails?.duration || null, privacyStatus: v.status?.privacyStatus || "unknown" }));
+        const detail = await youtubeJson("https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,status,liveStreamingDetails&id=" + ids.map(encodeURIComponent).join(","), accessToken);
+        videos = (detail.items || []).map(v => {
+          const duration = v.contentDetails?.duration || null;
+          const seconds = durationToSeconds(duration);
+          const isLive = Boolean(v.liveStreamingDetails) || v.snippet?.liveBroadcastContent === "live" || v.snippet?.liveBroadcastContent === "upcoming";
+          // A Data API v3 não expõe um sinal universal e confiável de “é Short”.
+          // Até 180 s é usado como classificação prática, não como confirmação do formato vertical.
+          const type = isLive ? "live" : (seconds !== null && seconds <= 180 ? "short" : "video");
+          return {
+            id: v.id,
+            title: v.snippet?.title || "Vídeo sem título",
+            description: v.snippet?.description || "",
+            publishedAt: v.snippet?.publishedAt || null,
+            thumbnail: v.snippet?.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || null,
+            url: "https://www.youtube.com/watch?v=" + v.id,
+            views: Number(v.statistics?.viewCount || 0),
+            likes: Number(v.statistics?.likeCount || 0),
+            comments: Number(v.statistics?.commentCount || 0),
+            duration,
+            durationSeconds: seconds,
+            type,
+            liveBroadcastContent: v.snippet?.liveBroadcastContent || "none",
+            privacyStatus: v.status?.privacyStatus || "unknown"
+          };
+        });
       }
     }
-    return res.json({ channel: { id: channel.id, title: channel.snippet?.title || account.display_name, avatar: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.default?.url || null, subscribers: channel.statistics?.hiddenSubscriberCount ? null : Number(channel.statistics?.subscriberCount || 0), totalViews: Number(channel.statistics?.viewCount || 0), videoCount: Number(channel.statistics?.videoCount || 0) }, videos, updatedAt: new Date().toISOString(), source: "YouTube Data API v3" });
+    return res.json({
+      channel: { id: channel.id, title: channel.snippet?.title || account.display_name, avatar: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.default?.url || null, subscribers: channel.statistics?.hiddenSubscriberCount ? null : Number(channel.statistics?.subscriberCount || 0), totalViews: Number(channel.statistics?.viewCount || 0), videoCount: Number(channel.statistics?.videoCount || 0) },
+      videos,
+      viewCountNote: "As visualizações por conteúdo e o total do canal são contagens acumuladas da YouTube Data API; não são o mesmo que visualizações dos últimos 28 dias no YouTube Analytics.",
+      updatedAt: new Date().toISOString(),
+      source: "YouTube Data API v3"
+    });
   } catch (error) {
     console.error("Erro ao carregar conteúdo YouTube:", error.message);
-    return res.status(error.status || 500).json({ error: error.message || "Não foi possível carregar os vídeos do canal." });
+    return res.status(error.status || 500).json({ error: error.message || "Não foi possível carregar o conteúdo do YouTube." });
   }
 });
+
+function durationToSeconds(duration) {
+  if (!duration || typeof duration !== "string") return null;
+  const match = duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!match) return null;
+  return Number(match[1] || 0) * 3600 + Number(match[2] || 0) * 60 + Number(match[3] || 0);
+}
 
 app.get("/api/youtube/community", async (req, res) => {
   try {
     const ctx = await getYouTubeContext(req);
     if (ctx.error) return res.status(ctx.error.status).json(ctx.error);
-    // O parâmetro correto da YouTube Data API é allThreadsRelatedToChannelId e exige o ID do canal.
-    // Buscar o canal autenticado primeiro evita enviar um parâmetro inválido e obter erro 400/403.
-    const channelData = await youtubeJson("https://www.googleapis.com/youtube/v3/channels?part=id&mine=true", ctx.accessToken);
-    const channelId = channelData.items?.[0]?.id;
-    if (!channelId) return res.status(404).json({ error: "Não foi possível identificar o canal autorizado do YouTube." });
-    const url = "https://www.googleapis.com/youtube/v3/commentThreads?part=snippet,replies&allThreadsRelatedToChannelId=" + encodeURIComponent(channelId) + "&order=time&maxResults=25&textFormat=plainText";
-    const data = await youtubeJson(url, ctx.accessToken);
-    const comments = (data.items || []).map(item => {
-      const c = item.snippet?.topLevelComment;
-      const s = c?.snippet || {};
-      return { id: c?.id || item.id, videoId: item.snippet?.videoId || null, videoTitle: item.snippet?.videoTitle || "Vídeo do canal", author: s.authorDisplayName || "Usuário", authorAvatar: s.authorProfileImageUrl || null, text: s.textDisplay || "", publishedAt: s.publishedAt || null, likeCount: Number(s.likeCount || 0), replyCount: Number(item.snippet?.totalReplyCount || 0), canReply: Boolean(s.canReply) };
-    });
-    return res.json({ comments, updatedAt: new Date().toISOString(), source: "YouTube Data API v3" });
+
+    // Estratégia principal: obter os vídeos recentes do canal e consultar comentários
+    // por videoId. Isso evita depender exclusivamente do filtro de canal, que pode falhar
+    // em alguns contextos, e permite ignorar vídeos com comentários desativados.
+    const channelData = await youtubeJson("https://www.googleapis.com/youtube/v3/channels?part=id,contentDetails&mine=true", ctx.accessToken);
+    const channel = channelData.items?.[0];
+    const uploads = channel?.contentDetails?.relatedPlaylists?.uploads;
+    if (!channel?.id || !uploads) return res.status(404).json({ error: "Não foi possível identificar o canal e a lista de vídeos da conta autorizada." });
+
+    const playlist = await youtubeJson("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=" + encodeURIComponent(uploads) + "&maxResults=50", ctx.accessToken);
+    const entries = (playlist.items || []).map(x => ({ id: x.contentDetails?.videoId || x.snippet?.resourceId?.videoId, title: x.snippet?.title || "Vídeo do canal" })).filter(x => x.id);
+    const videos = entries.slice(0, 30);
+    const results = await Promise.all(videos.map(async video => {
+      try {
+        const url = "https://www.googleapis.com/youtube/v3/commentThreads?part=snippet,replies&videoId=" + encodeURIComponent(video.id) + "&order=time&maxResults=100&textFormat=plainText";
+        const data = await youtubeJson(url, ctx.accessToken);
+        return (data.items || []).map(item => {
+          const c = item.snippet?.topLevelComment;
+          const s = c?.snippet || {};
+          return { id: c?.id || item.id, videoId: video.id, videoTitle: video.title, author: s.authorDisplayName || "Usuário", authorAvatar: s.authorProfileImageUrl || null, text: s.textDisplay || s.textOriginal || "", publishedAt: s.publishedAt || null, likeCount: Number(s.likeCount || 0), replyCount: Number(item.snippet?.totalReplyCount || 0), canReply: Boolean(item.snippet?.canReply) };
+        });
+      } catch (error) {
+        // Comentários desativados num vídeo não devem bloquear os demais.
+        if (error.status === 403 || error.status === 404) return [];
+        throw error;
+      }
+    }));
+    const comments = results.flat().sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0)).slice(0, 100);
+    return res.json({ comments, scannedVideos: videos.length, updatedAt: new Date().toISOString(), source: "YouTube Data API v3" });
   } catch (error) {
     console.error("Erro ao carregar comunidade YouTube:", error.message);
-    const message = error.status === 403 ? "O YouTube não liberou os comentários para esta conta ou o recurso está desativado no canal." : (error.message || "Não foi possível carregar os comentários.");
+    let message = error.message || "Não foi possível carregar os comentários.";
+    if (error.status === 403) message = "O YouTube recusou a consulta de comentários (403). Confirme se o escopo youtube.readonly foi autorizado e se a API está habilitada no projeto Google. O erro técnico foi registrado no servidor.";
     return res.status(error.status || 500).json({ error: message });
   }
 });
