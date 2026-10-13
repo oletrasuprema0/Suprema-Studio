@@ -94,9 +94,9 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
         <p class="section-intro">Acesse o painel individual de cada plataforma. O status de conexão aparece quando a integração correspondente está configurada.</p>
         <div class="platform-grid">
           <article class="platform-card" id="youtube-platform-card"><span class="tag">Studio individual</span><h3>YouTube Studio <span id="youtube-connection-label" style="float:right;color:var(--muted);font-size:12px;font-weight:400">Verificando conexão…</span></h3><p id="youtube-card-description">Área de trabalho para organizar vídeos, Shorts, lives, calendário e publicações do canal.</p><button class="primary-btn" data-platform="YouTube" id="youtube-open-button">Abrir YouTube Studio →</button></article>
-          <article class="platform-card"><span class="tag">Studio individual</span><h3>TikTok Studio</h3><p>Planeje vídeos curtos, ideias, frequência de postagem e acompanhe o que já foi publicado.</p><button class="primary-btn" data-platform="TikTok">Abrir TikTok Studio →</button></article>
-          <article class="platform-card"><span class="tag">Studio individual</span><h3>Instagram Studio</h3><p>Organize Reels, posts, temas recorrentes, calendário editorial e rascunhos.</p><button class="primary-btn" data-platform="Instagram">Abrir Instagram Studio →</button></article>
-          <article class="platform-card"><span class="tag">Studio individual</span><h3>Twitch / Lives</h3><p>Prepare lives, pautas, títulos, horários e conteúdos derivados das transmissões.</p><button class="primary-btn" data-platform="Twitch">Abrir Twitch Studio →</button></article>
+          <article class="platform-card"><span class="tag">Studio individual</span><h3>TikTok Studio</h3><p>Planeje vídeos curtos, ideias, frequência de postagem e acompanhe o que já foi publicado.</p><button class="primary-btn" data-platform="TikTok">Conectar conta TikTok →</button></article>
+          <article class="platform-card"><span class="tag">Studio individual</span><h3>Instagram Studio</h3><p>Organize Reels, posts, temas recorrentes, calendário editorial e rascunhos.</p><button class="primary-btn" data-platform="Instagram">Conectar conta Instagram →</button></article>
+          <article class="platform-card"><span class="tag">Studio individual</span><h3>Twitch / Lives</h3><p>Prepare lives, pautas, títulos, horários e conteúdos derivados das transmissões.</p><button class="primary-btn" data-platform="Twitch">Conectar conta Twitch →</button></article>
         </div>
         <div id="platform-detail" class="panel-card" style="margin-top:14px" hidden></div>
       </section>
@@ -193,10 +193,10 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||"Falha ao verificar Twitch");
       twitchStatus={connected:result.connected===true,configured:result.configured===true,needsReconnect:result.needsReconnect===true,displayName:result.displayName||""};
-      card.textContent=twitchStatus.connected?"Abrir Twitch Studio →":twitchStatus.needsReconnect?"Reconectar Twitch →":"Conectar Twitch →";
+      card.textContent=twitchStatus.connected?"Abrir Twitch Studio →":twitchStatus.needsReconnect?"Reconectar conta Twitch →":"Conectar conta Twitch →";
       const desc=card.closest(".platform-card")?.querySelector("p");
       if(desc)desc.textContent=twitchStatus.connected?"Conta conectada: "+(twitchStatus.displayName||"Twitch")+". Abra seu estúdio.":twitchStatus.configured?"Conecte sua conta Twitch antes de abrir o estúdio.":"O estúdio está pronto, mas a integração precisa das credenciais Twitch no servidor.";
-    }catch(_){card.textContent="Verificar conexão Twitch →"}
+    }catch(_){card.textContent="Conectar conta Twitch →"}
   }
   async function checkYouTubeStatus(){
     const label=$("youtube-connection-label"),button=$("youtube-open-button"),description=$("youtube-card-description");
@@ -217,6 +217,12 @@ main{min-width:0;padding:28px clamp(16px,3.5vw,44px) 50px}.mobile-brand{display:
   }
   document.querySelectorAll("[data-platform]").forEach(button=>button.addEventListener("click",async event=>{
     const name=button.dataset.platform;
+    if(name==="TikTok"||name==="Instagram"){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      alert("A integração oficial de "+name+" ainda não foi configurada. O botão ficará como “Conectar conta” até implementarmos o login OAuth e testarmos a conexão real.");
+      return;
+    }
     if(name==="YouTube"&&!youtubeStatus.connected){
       event.preventDefault();
       event.stopImmediatePropagation();
