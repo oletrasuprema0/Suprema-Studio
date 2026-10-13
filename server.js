@@ -1141,6 +1141,133 @@ app.get("/auth/youtube/callback", async (req, res) => {
   }
 });
 
+
+// --------------------------------------------------
+// TWITCH STUDIO — OAuth, conta conectada e dados reais
+// --------------------------------------------------
+function getTwitchConfig() {
+  const { TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, TWITCH_REDIRECT_URI } = process.env;
+  const stateSecret = process.env.TWITCH_OAUTH_STATE_SECRET || process.env.YOUTUBE_OAUTH_STATE_SECRET;
+  if (!TWITCH_CLIENT_ID || !TWITCH_CLIENT_SECRET || !TWITCH_REDIRECT_URI || !stateSecret) return null;
+  return { clientId: TWITCH_CLIENT_ID, clientSecret: TWITCH_CLIENT_SECRET, redirectUri: TWITCH_REDIRECT_URI, stateSecret };
+}
+
+async function getTwitchAccountContext(req) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) { const e = new Error('Entre novamente no Suprema Studio.'); e.status = 401; throw e; }
+  if (!supabase) { const e = new Error('Supabase não está configurado.'); e.status = 503; throw e; }
+  const { data: account, error } = await supabase.from('social_accounts').select('id, external_id, display_name, status, last_sync_at').eq('user_id', user.id).eq('platform', 'twitch').order('last_sync_at', { ascending: false }).limit(1).maybeSingle();
+  if (error) throw error;
+  if (!account) return { user, account: null, accessToken: null };
+  const { data: tokenRow, error: tokenError } = await supabase.from('social_tokens').select('access_token_enc, expires_at').eq('account_id', account.id).maybeSingle();
+  if (tokenError) throw tokenError;
+  if (!tokenRow?.access_token_enc) return { user, account, accessToken: null };
+  let token = decryptToken(tokenRow.access_token_enc);
+  if (tokenRow.expires_at && new Date(tokenRow.expires_at).getTime() < Date.now() + 60000) {
+    const cfg = getTwitchConfig();
+    if (!cfg) return { user, account, accessToken: null };
+    const r = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${token}` } });
+    if (!r.ok) return { user, account, accessToken: null };
+  }
+  return { user, account, accessToken: token };
+}
+
+app.get('/api/twitch/status', async (req, res) => {
+  try {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ error: 'Sessão inválida. Entre novamente no Suprema Studio.' });
+    const { data: account, error } = await supabase.from('social_accounts').select('id, external_id, display_name, status, last_sync_at').eq('user_id', user.id).eq('platform', 'twitch').order('last_sync_at', { ascending: false }).limit(1).maybeSingle();
+    if (error) throw error;
+    if (!account) return res.json({ connected: false, configured: Boolean(getTwitchConfig()) });
+    const { data: tokenRow, error: tokenError } = await supabase.from('social_tokens').select('access_token_enc, expires_at').eq('account_id', account.id).maybeSingle();
+    if (tokenError) throw tokenError;
+    let valid = false;
+    if (tokenRow?.access_token_enc) {
+      try { const token = decryptToken(tokenRow.access_token_enc); const vr = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${token}` } }); valid = vr.ok; } catch (_) {}
+    }
+    return res.json({ connected: valid, configured: Boolean(getTwitchConfig()), accountId: account.external_id, displayName: account.display_name, lastSyncAt: account.last_sync_at, needsReconnect: !valid });
+  } catch (e) { console.error('Twitch status:', e.message); return res.status(e.status || 500).json({ error: e.status ? e.message : 'Não foi possível verificar a conexão Twitch.' }); }
+});
+
+app.get('/api/twitch/content', async (req, res) => {
+  try {
+    const ctx = await getTwitchAccountContext(req);
+    if (!ctx.account || !ctx.accessToken) return res.status(409).json({ error: 'Conecte ou reconecte sua conta Twitch.' });
+    const cfg = getTwitchConfig();
+    const headers = { 'Client-Id': cfg.clientId, Authorization: `Bearer ${ctx.accessToken}` };
+    const vr = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${ctx.accessToken}` } });
+    if (!vr.ok) return res.status(401).json({ error: 'A autorização expirou. Reconecte a Twitch.' });
+    const profileResponse = await fetch(`https://api.twitch.tv/helix/users?id=${encodeURIComponent(ctx.account.external_id)}`, { headers });
+    const profileData = await profileResponse.json();
+    if (!profileResponse.ok) throw new Error(profileData.message || 'Falha ao consultar perfil Twitch.');
+    const profile = profileData.data?.[0];
+    if (!profile) return res.status(404).json({ error: 'Perfil Twitch não encontrado.' });
+    const streamsResponse = await fetch(`https://api.twitch.tv/helix/streams?user_id=${encodeURIComponent(profile.id)}&first=10`, { headers });
+    const streamsData = await streamsResponse.json();
+    if (!streamsResponse.ok) throw new Error(streamsData.message || 'Falha ao consultar transmissões.');
+    const videosResponse = await fetch(`https://api.twitch.tv/helix/videos?user_id=${encodeURIComponent(profile.id)}&first=20&type=archive`, { headers });
+    const videosData = await videosResponse.json();
+    if (!videosResponse.ok) throw new Error(videosData.message || 'Falha ao consultar vídeos/VODs.');
+    const gamesResponse = await fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${encodeURIComponent(profile.id)}`, { headers });
+    const gamesData = await gamesResponse.json();
+    return res.json({ profile: { id: profile.id, login: profile.login, displayName: profile.display_name, description: profile.description, profileImageUrl: profile.profile_image_url, broadcasterType: profile.broadcaster_type, viewCount: profile.view_count, createdAt: profile.created_at }, streams: streamsData.data || [], videos: videosData.data || [], channel: gamesData.data?.[0] || null, fetchedAt: new Date().toISOString(), limitations: ['A API Helix não disponibiliza contagem de seguidores em todos os cenários com o escopo básico. O painel não inventa esse número.', 'Estatísticas avançadas e dados históricos podem exigir permissões adicionais ou endpoints específicos.'] });
+  } catch (e) { console.error('Twitch content:', e.message); return res.status(e.status || 502).json({ error: e.status ? e.message : 'Não foi possível carregar os dados da Twitch.' }); }
+});
+
+app.post('/auth/twitch/start', async (req, res) => {
+  const cfg = getTwitchConfig();
+  if (!supabase || !cfg || !getEncryptionKey()) return res.status(503).json({ error: 'Configure TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, TWITCH_REDIRECT_URI, TWITCH_OAUTH_STATE_SECRET e a chave de criptografia no servidor.' });
+  try {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ error: 'Entre novamente no Suprema Studio.' });
+    const state = createSignedState(cfg.stateSecret, { userId: user.id, nonce: crypto.randomBytes(32).toString('hex'), createdAt: Date.now() });
+    res.cookie('twitch_oauth_state', state, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/auth/twitch/callback' });
+    const params = new URLSearchParams({ client_id: cfg.clientId, redirect_uri: cfg.redirectUri, response_type: 'code', scope: 'user:read:email', state });
+    return res.json({ url: `https://id.twitch.tv/oauth2/authorize?${params}` });
+  } catch (e) { console.error('Twitch OAuth start:', e.message); return res.status(500).json({ error: 'Não foi possível iniciar a conexão Twitch.' }); }
+});
+
+app.get('/auth/twitch/callback', async (req, res) => {
+  const cfg = getTwitchConfig();
+  const clear = () => res.clearCookie('twitch_oauth_state', { httpOnly: true, secure: true, sameSite: 'lax', path: '/auth/twitch/callback' });
+  if (!supabase || !cfg || !getEncryptionKey()) { clear(); return res.status(503).send(resultPage('Configuração incompleta', 'A integração Twitch ainda não está configurada no servidor.')); }
+  const a = verifySignedState(cfg.stateSecret, req.cookies.twitch_oauth_state);
+  const b = verifySignedState(cfg.stateSecret, req.query.state);
+  if (!a || !b || a.userId !== b.userId || a.nonce !== b.nonce || a.createdAt !== b.createdAt) { clear(); return res.status(400).send(resultPage('Solicitação inválida', 'Volte ao Suprema Studio e tente conectar novamente.')); }
+  clear();
+  if (req.query.error || typeof req.query.code !== 'string') return res.status(400).send(resultPage('Conexão cancelada', 'A autorização Twitch foi cancelada ou recusada.'));
+  try {
+    const tokenResponse = await fetch('https://id.twitch.tv/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: cfg.clientId, client_secret: cfg.clientSecret, code: req.query.code, grant_type: 'authorization_code', redirect_uri: cfg.redirectUri }) });
+    const tokens = await tokenResponse.json();
+    if (!tokenResponse.ok || !tokens.access_token) { console.error('Twitch token exchange failed:', tokenResponse.status, tokens.message || tokens.message); return res.status(502).send(resultPage('Falha na autorização', 'A Twitch não concluiu a troca do código. Confira as credenciais e a URL de retorno.')); }
+    const profileResponse = await fetch('https://api.twitch.tv/helix/users', { headers: { 'Client-Id': cfg.clientId, Authorization: `Bearer ${tokens.access_token}` } });
+    const profileData = await profileResponse.json(); const profile = profileData.data?.[0];
+    if (!profileResponse.ok || !profile?.id) return res.status(502).send(resultPage('Perfil não consultado', 'A autorização foi recebida, mas não foi possível consultar o perfil Twitch.'));
+    const { data: account, error: accountError } = await supabase.from('social_accounts').upsert({ user_id: a.userId, platform: 'twitch', external_id: profile.id, display_name: profile.display_name || profile.login, scopes: Array.isArray(tokens.scope) ? tokens.scope : ['user:read:email'], status: 'connected', last_sync_at: new Date().toISOString() }, { onConflict: 'user_id,platform,external_id' }).select('id').single();
+    if (accountError || !account?.id) throw accountError || new Error('Conta não retornada pelo banco.');
+    const { error: tokenError } = await supabase.from('social_tokens').upsert({ account_id: account.id, access_token_enc: encryptToken(tokens.access_token), refresh_token_enc: tokens.refresh_token ? encryptToken(tokens.refresh_token) : null, expires_at: new Date(Date.now() + (Number(tokens.expires_in) || 3600) * 1000).toISOString() }, { onConflict: 'account_id' });
+    if (tokenError) throw tokenError;
+    return res.status(200).send(resultPage('Twitch conectada!', `A conta ${profile.display_name || profile.login} foi vinculada ao Suprema Studio. O token foi armazenado criptografado.`));
+  } catch (e) { console.error('Twitch OAuth callback:', e.message); return res.status(500).send(resultPage('Erro na conexão', 'Ocorreu um erro ao salvar a conta Twitch. Tente novamente.')); }
+});
+
+app.post('/auth/twitch/disconnect', async (req, res) => {
+  try {
+    const user = await getAuthenticatedUser(req);
+    if (!user) return res.status(401).json({ error: 'Sessão inválida.' });
+    const { data: account, error } = await supabase.from('social_accounts').select('id, external_id').eq('user_id', user.id).eq('platform', 'twitch').maybeSingle();
+    if (error) throw error;
+    if (!account) return res.json({ disconnected: true });
+    const { data: tokenRow } = await supabase.from('social_tokens').select('access_token_enc').eq('account_id', account.id).maybeSingle();
+    if (tokenRow?.access_token_enc) { try { const token = decryptToken(tokenRow.access_token_enc); await fetch('https://id.twitch.tv/oauth2/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: getTwitchConfig()?.clientId || '', token }) }); } catch (_) {} }
+    const { error: deleteError } = await supabase.from('social_accounts').delete().eq('id', account.id).eq('user_id', user.id);
+    if (deleteError) throw deleteError;
+    return res.json({ disconnected: true });
+  } catch (e) { console.error('Twitch disconnect:', e.message); return res.status(e.status || 500).json({ error: 'Não foi possível desconectar a Twitch.' }); }
+});
+
+app.get('/twitch-studio', (req, res) => res.sendFile(path.join(__dirname, 'public', 'twitch-studio.html')));
+
 // --------------------------------------------------
 // INICIALIZAÇÃO
 // --------------------------------------------------
