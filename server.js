@@ -674,7 +674,7 @@ app.get("/api/youtube/content", async (req, res) => {
     const ctx = await getYouTubeContext(req);
     if (ctx.error) return res.status(ctx.error.status).json(ctx.error);
     const { accessToken, account } = ctx;
-    const channelData = await youtubeJson("https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&mine=true", accessToken);
+    const channelData = await youtubeJson("https://www.googleapis.com/youtube/v3/channels?part=snippet,brandingSettings,statistics,contentDetails&mine=true", accessToken);
     const channel = channelData.items?.[0];
     if (!channel) return res.status(404).json({ error: "Não foi possível encontrar o canal autorizado." });
     const uploads = channel.contentDetails?.relatedPlaylists?.uploads;
@@ -711,7 +711,7 @@ app.get("/api/youtube/content", async (req, res) => {
       }
     }
     return res.json({
-      channel: { id: channel.id, title: channel.snippet?.title || account.display_name, avatar: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.default?.url || null, subscribers: channel.statistics?.hiddenSubscriberCount ? null : Number(channel.statistics?.subscriberCount || 0), totalViews: Number(channel.statistics?.viewCount || 0), videoCount: Number(channel.statistics?.videoCount || 0) },
+      channel: { id: channel.id, title: channel.snippet?.title || account.display_name, avatar: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.default?.url || null, banner: channel.brandingSettings?.image?.bannerExternalUrl || null, subscribers: channel.statistics?.hiddenSubscriberCount ? null : Number(channel.statistics?.subscriberCount || 0), totalViews: Number(channel.statistics?.viewCount || 0), videoCount: Number(channel.statistics?.videoCount || 0) },
       videos,
       viewCountNote: "As visualizações por conteúdo e o total do canal são contagens acumuladas da YouTube Data API; não são o mesmo que visualizações dos últimos 28 dias no YouTube Analytics.",
       updatedAt: new Date().toISOString(),
